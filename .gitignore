@@ -1,0 +1,23 @@
+# Dependências
+/node_modules
+/backend/node_modules
+/frontend/cadastro-funcionarios/node_modules
+
+# Arquivos de ambiente com informações sensíveis
+.env
+backend/.env
+frontend/cadastro-funcionarios/.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Pasta de build do frontend
+/frontend/cadastro-funcionarios/build
+
+# Arquivos de IDEs e do sistema
+.vscode/
+.idea/
+*.DS_Store
