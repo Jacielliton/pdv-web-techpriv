@@ -1,6 +1,7 @@
 // pdv-web-techpriv\frontend\cadastro-funcionarios\src\pages\FrenteDeCaixa.js
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import axios from 'axios'; // MANTENHA o axios global para a chamada de login
+import api from '../services/api'; // IMPORTE a nova instância configurada
 import { useAuth } from '../contexts/auth';
 import { toast } from 'react-toastify';
 import ManagerOverrideDialog from '../components/ManagerOverrideDialog';
@@ -19,13 +20,9 @@ function FrenteDeCaixa() {
   const [metodoPagamento, setMetodoPagamento] = useState('Dinheiro');
   const [valorPago, setValorPago] = useState('');
   const [troco, setTroco] = useState(0);
-
-  // Estados para autorização de gerente
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [itemParaRemover, setItemParaRemover] = useState(null);
   const [overrideError, setOverrideError] = useState('');
-
-  // Estados para a integração com PagSeguro
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState('');
   const [pagamentoPendente, setPagamentoPendente] = useState(false);
@@ -34,7 +31,8 @@ function FrenteDeCaixa() {
   useEffect(() => {
     const fetchProdutos = async () => {
       try {
-        const response = await axios.get('http://localhost:3333/api/produtos');
+        // ALTERADO: Usa a instância 'api' que envia o token
+        const response = await api.get('/produtos');
         setTodosProdutos(response.data);
       } catch (error) {
         toast.error('Erro ao carregar produtos.');
@@ -43,17 +41,17 @@ function FrenteDeCaixa() {
     fetchProdutos();
   }, []);
 
-  // Busca os dispositivos PagSeguro disponíveis (celulares com Tap on Phone)
+  // Busca os dispositivos PagSeguro
   useEffect(() => {
     const fetchDevices = async () => {
       try {
-        const response = await axios.get('http://localhost:3333/api/pagamento/pagseguro/devices');
+        // ALTERADO: Usa a instância 'api' que envia o token
+        const response = await api.get('/pagamento/pagseguro/devices');
         setDevices(response.data);
         if (response.data.length > 0) {
-          setSelectedDevice(response.data[0].id); // Seleciona o primeiro dispositivo por padrão
+          setSelectedDevice(response.data[0].id);
         }
       } catch (error) {
-        // Silencia o erro caso nenhuma maquininha seja encontrada
         console.error("Nenhum dispositivo PagSeguro encontrado.");
       }
     };
@@ -67,7 +65,6 @@ function FrenteDeCaixa() {
       (p.codigo_barras && p.codigo_barras.includes(termoBusca))
     );
   }, [termoBusca, todosProdutos]);
-
   
   const totalVenda = useMemo(() => {
     return carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
@@ -81,7 +78,6 @@ function FrenteDeCaixa() {
       setTroco(0);
     }
   }, [valorPago, totalVenda]);
-  
 
   const adicionarAoCarrinho = (produto) => {
     setCarrinho(carrinhoAtual => {
@@ -97,24 +93,21 @@ function FrenteDeCaixa() {
   };
 
   const removerDoCarrinho = (produtoId) => {
-    // Se o usuário atual já for gerente, remove direto
     if (isManager) {
       setCarrinho(carrinhoAtual => carrinhoAtual.filter(item => item.id !== produtoId));
       toast.info('Item removido pelo gerente.');
     } else {
-      // Se não for gerente, abre o diálogo de autorização
       setItemParaRemover(produtoId);
       setOverrideDialogOpen(true);
-      setOverrideError(''); // Limpa erros anteriores
+      setOverrideError('');
     }
   };
 
-  // 4. Crie a função para lidar com a confirmação do gerente
   const handleManagerAuthorize = async (email, senha) => {
     try {
+      // MANTIDO: 'axios' global é o correto aqui, pois a rota de login é pública
       const response = await axios.post('http://localhost:3333/api/login', { email, senha });
 
-      // Verifica se o login foi bem-sucedido E se o usuário é um gerente
       if (response.data.funcionario && response.data.funcionario.cargo === 'gerente') {
         toast.success('Autorização concedida!');
         setCarrinho(carrinhoAtual => carrinhoAtual.filter(item => item.id !== itemParaRemover));
@@ -129,17 +122,12 @@ function FrenteDeCaixa() {
     }
   };
   
-  const [qrCodeText, setQrCodeText] = useState('');
-  const [isQrCodeDialogOpen, setIsQrCodeDialogOpen] = useState(false);
-
-  // Função principal para finalizar a venda
   const finalizarVenda = async () => {
     if (carrinho.length === 0) {
       toast.error('Adicione pelo menos um item à venda.');
       return;
     }
 
-    // Lógica para registrar venda com métodos simples (Dinheiro, Pix, etc.)
     const registrarVendaNoSistema = async (metodo) => {
       const payload = {
         valor_total: totalVenda,
@@ -147,7 +135,8 @@ function FrenteDeCaixa() {
         itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
       };
       try {
-        await axios.post('http://localhost:3333/api/vendas', payload);
+        // ALTERADO: Usa a instância 'api' que envia o token
+        await api.post('/vendas', payload);
         toast.success('Venda registrada no sistema com sucesso!');
         setCarrinho([]);
         setValorPago('');
@@ -171,10 +160,9 @@ function FrenteDeCaixa() {
       };
 
       try {
-        await axios.post('http://localhost:3333/api/pagamento/pagseguro/order', payload);
+        // ALTERADO: Usa a instância 'api' que envia o token
+        await api.post('/pagamento/pagseguro/order', payload);
         toast.success('Cobrança enviada! Aguarde o pagamento do cliente no celular.');
-        // A confirmação final da venda e atualização do estoque ocorrerá via Webhook no backend.
-        // Por enquanto, apenas limpamos o carrinho para a próxima venda.
         setCarrinho([]);
         setValorPago('');
       } catch (error) {
@@ -183,24 +171,16 @@ function FrenteDeCaixa() {
         setPagamentoPendente(false);
       }
     } else {
-      // Para outros métodos, apenas registra no nosso sistema
       await registrarVendaNoSistema(metodoPagamento);
     }
   };
 
-   // NOVA FUNÇÃO PARA ATUALIZAR A QUANTIDADE
   const handleQuantidadeChange = (produtoId, novaQuantidade) => {
     const qtd = parseInt(novaQuantidade, 10);
-    
-    // Encontra o produto original para checar o estoque máximo
     const produtoOriginal = todosProdutos.find(p => p.id === produtoId);
     
-    // Validação: não permite quantidade menor que 1 ou não-numérica
-    if (isNaN(qtd) || qtd < 1) {
-      return;
-    }
+    if (isNaN(qtd) || qtd < 1) return;
 
-    // Validação: não permite quantidade maior que o estoque
     if (produtoOriginal && qtd > produtoOriginal.quantidade_estoque) {
       toast.error(`Estoque máximo para ${produtoOriginal.nome} é ${produtoOriginal.quantidade_estoque}.`);
       return;

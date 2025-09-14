@@ -1,18 +1,25 @@
 // backend/src/controllers/PagSeguroController.js
 const axios = require('axios');
 
+// Crie uma instância do Axios para o PagSeguro para não repetir a configuração
+const pagseguroApi = axios.create({
+  baseURL: process.env.PAGSEGURO_API_URL, // <-- USA A VARIÁVEL DE AMBIENTE
+  headers: {
+    'Authorization': `Bearer ${process.env.PAGSEGURO_TOKEN}`,
+    'Content-Type': 'application/json'
+  }
+});
+
 class PagSeguroController {
-  // NOVO MÉTODO para listar maquininhas online
   async listDevices(req, res) {
     try {
-      const response = await axios.get('https://api.pagseguro.com/proximity-payment/devices', {
-        headers: { 'Authorization': `Bearer ${process.env.PAGSEGURO_TOKEN}` },
-      });
-      // Filtra apenas as maquininhas que estão online
+      // A URL agora é relativa: '/proximity-payment/devices'
+      const response = await pagseguroApi.get('/proximity-payment/devices');
+
       const onlineDevices = response.data.devices.filter(d => d.online === true);
       return res.json(onlineDevices);
     } catch (error) {
-      console.error("Erro ao listar dispositivos PagSeguro:", error.response?.data);
+      console.error("Erro ao listar dispositivos PagSeguro:", error.response?.data || error.message);
       return res.status(500).json({ error: 'Falha ao listar dispositivos.' });
     }
   }
@@ -41,20 +48,12 @@ class PagSeguroController {
     };
 
     try {
-      const response = await axios.post(
-        'https://api.pagseguro.com/orders',
-        orderData,
-        {
-          headers: {
-            'Authorization': `Bearer ${process.env.PAGSEGURO_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      // Retorna uma confirmação simples. A mágica acontece na maquininha.
-      return res.json({ message: 'Cobrança enviada para a maquininha.', order: response.data });
+      // A URL agora é relativa: '/orders'
+      const response = await pagseguroApi.post('/orders', orderData);
+
+      return res.json({ message: 'Cobrança enviada para o dispositivo.', order: response.data });
     } catch (error) {
-      console.error("Erro ao criar pedido no PagSeguro:", error.response?.data);
+      console.error("Erro ao criar pedido no PagSeguro:", error.response?.data || error.message);
       return res.status(500).json({ error: 'Falha ao criar pedido no PagSeguro.' });
     }
   }
