@@ -4,6 +4,8 @@ import axios from 'axios';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'react-toastify';
 import ManagerOverrideDialog from '../components/ManagerOverrideDialog';
+import QRCode from 'qrcode.react'; // Importe a biblioteca do QR Code
+import { Dialog, DialogTitle, DialogContent, DialogContentText } from '@mui/material'; // Importe o Dialog
 
 import { 
   Container, Typography, Grid, TextField, List, ListItem, ListItemButton, ListItemText,
@@ -11,6 +13,9 @@ import {
   Button, Select, MenuItem, FormControl, InputLabel, IconButton
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+
+
+
 
 function FrenteDeCaixa() {
   const { user, isManager } = useAuth();
@@ -21,6 +26,29 @@ function FrenteDeCaixa() {
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [itemParaRemover, setItemParaRemover] = useState(null);
   const [overrideError, setOverrideError] = useState('');
+  const [devices, setDevices] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState('');
+  const [pagamentoPendente, setPagamentoPendente] = useState(false);
+
+  // 1. NOVOS ESTADOS PARA VALOR PAGO E TROCO
+  const [valorPago, setValorPago] = useState('');
+  const [troco, setTroco] = useState(0);
+
+  // Busca a lista de maquininhas disponíveis ao carregar
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const response = await axios.get('http://localhost:3333/api/pagamento/pagseguro/devices');
+        setDevices(response.data);
+        if (response.data.length > 0) {
+          setSelectedDevice(response.data[0].id); // Seleciona a primeira por padrão
+        }
+      } catch (error) {
+        toast.error('Não foi possível encontrar maquininhas conectadas.');
+      }
+    };
+    fetchDevices();
+  }, []);
 
   useEffect(() => {
     const fetchProdutos = async () => {
@@ -41,10 +69,21 @@ function FrenteDeCaixa() {
       (p.codigo_barras && p.codigo_barras.includes(termoBusca))
     );
   }, [termoBusca, todosProdutos]);
+
   
   const totalVenda = useMemo(() => {
     return carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
   }, [carrinho]);
+
+  useEffect(() => {
+    const valorPagoFloat = parseFloat(valorPago);
+    if (!isNaN(valorPagoFloat) && valorPagoFloat >= totalVenda) {
+      setTroco(valorPagoFloat - totalVenda);
+    } else {
+      setTroco(0);
+    }
+  }, [valorPago, totalVenda]);
+  
 
   const adicionarAoCarrinho = (produto) => {
     setCarrinho(carrinhoAtual => {
@@ -92,22 +131,39 @@ function FrenteDeCaixa() {
     }
   };
   
+  const [qrCodeText, setQrCodeText] = useState('');
+  const [isQrCodeDialogOpen, setIsQrCodeDialogOpen] = useState(false);
+
   const finalizarVenda = async () => {
-    if (carrinho.length === 0) {
-      toast.error('Adicione pelo menos um item à venda.');
-      return;
-    }
-    const payload = {
-      valor_total: totalVenda,
-      metodo_pagamento: metodoPagamento,
-      itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
-    };
-    try {
-      await axios.post('http://localhost:3333/api/vendas', payload);
-      toast.success('Venda finalizada com sucesso!');
-      setCarrinho([]);
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Erro ao finalizar venda.');
+    if (carrinho.length === 0) { /* ... */ }
+
+    if (metodoPagamento === 'Cartão (PagSeguro)') {
+      if (!selectedDevice) {
+        toast.error('Selecione uma maquininha para continuar.');
+        return;
+      }
+      setPagamentoPendente(true);
+      toast.info('Enviando cobrança para a maquininha...');
+      
+      const payload = {
+        valor_total: totalVenda,
+        itens: carrinho.map(item => ({ nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
+        device_id: selectedDevice, // Envia o ID da maquininha selecionada
+      };
+
+      try {
+        await axios.post('http://localhost:3333/api/pagamento/pagseguro/order', payload);
+        // A confirmação agora vem pelo Webhook no backend.
+        // O frontend pode apenas aguardar e limpar o carrinho.
+        toast.success('Cobrança enviada! Aguarde o pagamento do cliente.');
+        setCarrinho([]);
+      } catch (error) {
+        toast.error('Erro ao enviar cobrança para a maquininha.');
+      } finally {
+        setPagamentoPendente(false);
+      }
+    } else {
+      // Lógica para outros pagamentos
     }
   };
 
@@ -214,39 +270,82 @@ function FrenteDeCaixa() {
         </Grid>
         
         {/* Coluna da Direita: Total e Finalização */}
-        <Grid xs={12} md={5}>
-          <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography variant="h4">Total</Typography>
-            <Typography variant="h3" component="p" sx={{ fontWeight: 'bold' }}>
-              R$ {totalVenda.toFixed(2)}
-            </Typography>
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel id="payment-method-label">Método de Pagamento</InputLabel>
-              <Select
-                labelId="payment-method-label"
-                value={metodoPagamento}
-                label="Método de Pagamento"
-                onChange={e => setMetodoPagamento(e.target.value)}
-              >
-                <MenuItem value="Dinheiro">Dinheiro</MenuItem>
-                <MenuItem value="Cartão de Crédito">Cartão de Crédito</MenuItem>
-                <MenuItem value="Cartão de Débito">Cartão de Débito</MenuItem>
-                <MenuItem value="Pix">Pix</MenuItem>
-              </Select>
-            </FormControl>
-            <Button
-              variant="contained"
-              color="success"
-              size="large"
-              onClick={finalizarVenda}
-              disabled={carrinho.length === 0}
-              sx={{ mt: 2, p: 2, fontSize: '1.2rem' }}
+      <Grid item xs={12} md={5}>
+        <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Typography variant="h4">Total</Typography>
+          <Typography variant="h3" component="p" sx={{ fontWeight: 'bold' }}>
+            R$ {totalVenda.toFixed(2)}
+          </Typography>
+          
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Método de Pagamento</InputLabel>
+            <Select
+              value={metodoPagamento}
+              label="Método de Pagamento"
+              onChange={e => setMetodoPagamento(e.target.value)}
             >
-              Finalizar Venda
-            </Button>
-            
-          </Paper>
-        </Grid>
+              <MenuItem value="Dinheiro">Dinheiro</MenuItem>
+              <MenuItem value="Cartão de Crédito">Cartão de Crédito</MenuItem>
+              <MenuItem value="Cartão de Débito">Cartão de Débito</MenuItem>
+              <MenuItem value="Pix">Pix</MenuItem>
+              {/* Adicione a opção do PagSeguro aqui */}
+              <MenuItem value="Cartão (PagSeguro)">Cartão (PagSeguro)</MenuItem> 
+            </Select>
+          </FormControl>
+
+          {/* O seletor da maquininha fica FORA e abaixo do seletor de pagamento */}
+            {metodoPagamento === 'Cartão (PagSeguro)' && (
+              <FormControl fullWidth>
+                <InputLabel>Maquininha</InputLabel>
+                <Select
+                  value={selectedDevice}
+                  label="Maquininha"
+                  onChange={e => setSelectedDevice(e.target.value)}
+                  disabled={devices.length === 0}
+                >
+                  {devices.map(device => (
+                    <MenuItem key={device.id} value={device.id}>{device.display_name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          
+
+          {/* 3. NOVO TEXTFIELD PARA O "VALOR PAGO" */}
+          {metodoPagamento === 'Dinheiro' && (
+            <TextField
+              label="Valor Pago"
+              type="number"
+              fullWidth
+              value={valorPago}
+              onChange={(e) => setValorPago(e.target.value)}
+              InputProps={{
+                startAdornment: <Typography sx={{ mr: 1 }}>R$</Typography>,
+              }}
+            />
+          )}
+
+          {/* 4. EXIBIÇÃO DO TROCO CALCULADO */}
+          {troco > 0 && (
+            <div>
+              <Typography variant="h6">Troco</Typography>
+              <Typography variant="h4" component="p" sx={{ fontWeight: 'bold', color: 'blue' }}>
+                R$ {troco.toFixed(2)}
+              </Typography>
+            </div>
+          )}
+
+          <Button
+            variant="contained"
+            color="success"
+            onClick={finalizarVenda}
+            disabled={carrinho.length === 0 || pagamentoPendente}
+            sx={{ mt: 2, p: 2, fontSize: '1.2rem' }}
+          >
+            Finalizar Venda
+          </Button>
+        </Paper>
+      </Grid>
       </Grid>
       <ManagerOverrideDialog
         open={overrideDialogOpen}

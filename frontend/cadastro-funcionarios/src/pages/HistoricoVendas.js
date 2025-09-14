@@ -1,18 +1,26 @@
 // pdv-web-techpriv\frontend\cadastro-funcionarios\src\pages\HistoricoVendas.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { useReactToPrint } from 'react-to-print'; // 1. Importe o hook de impressão
+import Recibo from '../components/Recibo'; // 2. Importe o nosso componente de recibo
+
 
 // Importando componentes do MUI
 import {
   Container, Typography, Accordion, AccordionSummary, AccordionDetails,
-  List, ListItem, ListItemText, Grid, Box, CircularProgress
+  List, ListItem, ListItemText, Grid, Box, CircularProgress, IconButton
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import PrintIcon from '@mui/icons-material/Print';
 
 function HistoricoVendas() {
   const [vendas, setVendas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // 3. Crie o estado e a referência para o recibo
+  const [vendaParaImprimir, setVendaParaImprimir] = useState(null);
+  const reciboRef = useRef();
 
   useEffect(() => {
     const fetchHistorico = async () => {
@@ -29,15 +37,26 @@ function HistoricoVendas() {
     fetchHistorico();
   }, []);
   
-  // O MUI Accordion gerencia o estado de expandir/recolher, então não precisamos mais do 'vendaAbertaId'
+  // 4. Configure o hook de impressão
+  const handlePrint = useReactToPrint({
+    content: () => reciboRef.current,
+    onAfterPrint: () => setVendaParaImprimir(null) // Limpa o estado após a impressão
+  });
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // 5. Crie a função que prepara os dados e chama a impressão
+  const prepararImpressao = (venda) => {
+    setVendaParaImprimir(venda);
+  };
+  
+  // O useEffect abaixo garante que a impressão seja chamada após o estado ser atualizado
+  useEffect(() => {
+    if (vendaParaImprimir) {
+      handlePrint();
+    }
+  }, [vendaParaImprimir, handlePrint]);
+
+
+  if (loading) return ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box> );
   if (error) return <Typography color="error">{error}</Typography>;
 
   return (
@@ -45,29 +64,23 @@ function HistoricoVendas() {
       <Typography variant="h4" component="h1" gutterBottom>
         Histórico de Vendas
       </Typography>
-      {vendas.length === 0 ? (
-        <Typography>Nenhuma venda registrada ainda.</Typography>
-      ) : (
-        vendas.map(venda => (
-          <Accordion key={venda.id}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid xs={3}>
-                  <Typography><strong>Venda #{venda.id}</strong></Typography>
-                </Grid>
-                <Grid xs={5}>
-                  <Typography color="textSecondary">
-                    {new Date(venda.data_venda).toLocaleString('pt-BR')}
-                  </Typography>
-                </Grid>
-                <Grid xs={4} sx={{ textAlign: 'right' }}>
-                  <Typography>
-                    Total: <strong>R$ {Number(venda.valor_total).toFixed(2)}</strong>
-                  </Typography>
-                </Grid>
+      {vendas.map(venda => (
+        <Accordion key={venda.id}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} sm={6}>
+                <Typography><strong>Venda #{venda.id}</strong> - {new Date(venda.data_venda).toLocaleString('pt-BR')}</Typography>
               </Grid>
-            </AccordionSummary>
-            <AccordionDetails>
+              <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <Typography>Total: <strong>R$ {Number(venda.valor_total).toFixed(2)}</strong></Typography>
+                {/* 6. Adicione o botão de impressão */}
+                <IconButton onClick={(e) => { e.stopPropagation(); prepararImpressao(venda); }} color="primary" sx={{ ml: 2 }}>
+                  <PrintIcon />
+                </IconButton>
+              </Grid>
+            </Grid>
+          </AccordionSummary>
+          <AccordionDetails>
               <Box>
                 <Typography variant="subtitle1"><strong>Operador:</strong> {venda.Funcionario?.nome || 'N/A'}</Typography>
                 <Typography variant="subtitle1"><strong>Pagamento:</strong> {venda.metodo_pagamento}</Typography>
@@ -84,9 +97,13 @@ function HistoricoVendas() {
                 </List>
               </Box>
             </AccordionDetails>
-          </Accordion>
-        ))
-      )}
+        </Accordion>
+      ))}
+
+      {/* 7. Adicione o componente de recibo escondido */}
+      <div style={{ display: 'none' }}>
+        <Recibo ref={reciboRef} venda={vendaParaImprimir} />
+      </div>
     </Container>
   );
 }
