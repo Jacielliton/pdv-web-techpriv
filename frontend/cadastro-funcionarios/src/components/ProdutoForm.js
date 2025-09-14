@@ -64,7 +64,7 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
       </Typography>
       <Box component="form" onSubmit={handleSubmit}>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
+          <Grid xs={12} sm={6}>
             <TextField
               name="nome"
               label="Nome do Produto"
@@ -74,7 +74,7 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
               required
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid xs={12} sm={6}>
             <TextField
               name="preco"
               label="Preço (ex: 10.50)"
@@ -85,7 +85,7 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
               required
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid xs={12} sm={6}>
             <TextField
               name="quantidade_estoque"
               label="Quantidade em Estoque"
@@ -96,7 +96,7 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
               required
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid xs={12} sm={6}>
             <TextField
               name="codigo_barras"
               label="Código de Barras (opcional)"
@@ -105,7 +105,7 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
               fullWidth
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid xs={12}>
             <TextField
               name="descricao"
               label="Descrição (opcional)"

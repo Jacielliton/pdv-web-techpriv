@@ -52,15 +52,15 @@ function HistoricoVendas() {
           <Accordion key={venda.id}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Grid container spacing={2} alignItems="center">
-                <Grid item xs={3}>
+                <Grid xs={3}>
                   <Typography><strong>Venda #{venda.id}</strong></Typography>
                 </Grid>
-                <Grid item xs={5}>
+                <Grid xs={5}>
                   <Typography color="textSecondary">
                     {new Date(venda.data_venda).toLocaleString('pt-BR')}
                   </Typography>
                 </Grid>
-                <Grid item xs={4} sx={{ textAlign: 'right' }}>
+                <Grid xs={4} sx={{ textAlign: 'right' }}>
                   <Typography>
                     Total: <strong>R$ {Number(venda.valor_total).toFixed(2)}</strong>
                   </Typography>

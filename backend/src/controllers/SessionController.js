@@ -24,7 +24,7 @@ class SessionController {
 
     // 3. Gerar o Token JWT
     const token = jwt.sign(
-      { id: id }, // Payload: informações que estarão dentro do token
+      { id: id, cargo: cargo }, // Payload: informações que estarão dentro do token
       process.env.JWT_SECRET, // Chave secreta para assinar o token
       { expiresIn: '1d' } // Opções, como a data de expiração (1 dia)
     );

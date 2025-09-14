@@ -3,19 +3,24 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'react-toastify';
+import ManagerOverrideDialog from '../components/ManagerOverrideDialog';
+
 import { 
-  Container, Typography, Grid, TextField, List, ListItem, ListItemText, // <-- Adicionado aqui
+  Container, Typography, Grid, TextField, List, ListItem, ListItemButton, ListItemText,
   Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Button, Select, MenuItem, FormControl, InputLabel, IconButton
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 function FrenteDeCaixa() {
-  const { user } = useAuth();
+  const { user, isManager } = useAuth();
   const [todosProdutos, setTodosProdutos] = useState([]);
   const [termoBusca, setTermoBusca] = useState('');
   const [carrinho, setCarrinho] = useState([]);
   const [metodoPagamento, setMetodoPagamento] = useState('Dinheiro');
+  const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
+  const [itemParaRemover, setItemParaRemover] = useState(null);
+  const [overrideError, setOverrideError] = useState('');
 
   useEffect(() => {
     const fetchProdutos = async () => {
@@ -55,7 +60,36 @@ function FrenteDeCaixa() {
   };
 
   const removerDoCarrinho = (produtoId) => {
-    setCarrinho(carrinhoAtual => carrinhoAtual.filter(item => item.id !== produtoId));
+    // Se o usuário atual já for gerente, remove direto
+    if (isManager) {
+      setCarrinho(carrinhoAtual => carrinhoAtual.filter(item => item.id !== produtoId));
+      toast.info('Item removido pelo gerente.');
+    } else {
+      // Se não for gerente, abre o diálogo de autorização
+      setItemParaRemover(produtoId);
+      setOverrideDialogOpen(true);
+      setOverrideError(''); // Limpa erros anteriores
+    }
+  };
+
+  // 4. Crie a função para lidar com a confirmação do gerente
+  const handleManagerAuthorize = async (email, senha) => {
+    try {
+      const response = await axios.post('http://localhost:3333/api/login', { email, senha });
+
+      // Verifica se o login foi bem-sucedido E se o usuário é um gerente
+      if (response.data.funcionario && response.data.funcionario.cargo === 'gerente') {
+        toast.success('Autorização concedida!');
+        setCarrinho(carrinhoAtual => carrinhoAtual.filter(item => item.id !== itemParaRemover));
+        setOverrideDialogOpen(false);
+        setItemParaRemover(null);
+      } else {
+        setOverrideError('Credenciais válidas, mas o usuário não é um gerente.');
+      }
+    } catch (error) {
+      console.error("Falha na autorização:", error);
+      setOverrideError('E-mail ou senha de gerente inválidos.');
+    }
   };
   
   const finalizarVenda = async () => {
@@ -77,6 +111,31 @@ function FrenteDeCaixa() {
     }
   };
 
+   // NOVA FUNÇÃO PARA ATUALIZAR A QUANTIDADE
+  const handleQuantidadeChange = (produtoId, novaQuantidade) => {
+    const qtd = parseInt(novaQuantidade, 10);
+    
+    // Encontra o produto original para checar o estoque máximo
+    const produtoOriginal = todosProdutos.find(p => p.id === produtoId);
+    
+    // Validação: não permite quantidade menor que 1 ou não-numérica
+    if (isNaN(qtd) || qtd < 1) {
+      return;
+    }
+
+    // Validação: não permite quantidade maior que o estoque
+    if (produtoOriginal && qtd > produtoOriginal.quantidade_estoque) {
+      toast.error(`Estoque máximo para ${produtoOriginal.nome} é ${produtoOriginal.quantidade_estoque}.`);
+      return;
+    }
+
+    setCarrinho(carrinhoAtual => 
+      carrinhoAtual.map(item => 
+        item.id === produtoId ? { ...item, quantidade: qtd } : item
+      )
+    );
+  };
+
   return (
     <Container maxWidth="lg">
       <Typography variant="h4" component="h1" gutterBottom>Frente de Caixa</Typography>
@@ -84,7 +143,7 @@ function FrenteDeCaixa() {
       <Grid container spacing={3} sx={{ mt: 2 }}>
         
         {/* Coluna da Esquerda: Busca e Carrinho */}
-        <Grid item xs={12} md={7}>
+        <Grid xs={12} md={7}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6">Adicionar Produto</Typography>
             <TextField
@@ -114,7 +173,7 @@ function FrenteDeCaixa() {
               <TableHead>
                 <TableRow>
                   <TableCell>Produto</TableCell>
-                  <TableCell align="center">Qtd.</TableCell>
+                  <TableCell align="center" sx={{ width: 120 }}>Qtd.</TableCell>
                   <TableCell align="right">Preço Unit.</TableCell>
                   <TableCell align="right">Subtotal</TableCell>
                   <TableCell align="center">Ação</TableCell>
@@ -124,7 +183,22 @@ function FrenteDeCaixa() {
                 {carrinho.map(item => (
                   <TableRow key={item.id}>
                     <TableCell>{item.nome}</TableCell>
-                    <TableCell align="center">{item.quantidade}</TableCell>
+                    <TableCell align="center">
+                      {/* 2. CAMPO DE QUANTIDADE SUBSTITUÍDO POR UM TEXTFIELD */}
+                      <TextField
+                        type="number"
+                        value={item.quantidade}
+                        onChange={(e) => handleQuantidadeChange(item.id, e.target.value)}
+                        size="small"
+                        sx={{ width: '80px' }}
+                        InputProps={{
+                          inputProps: { 
+                            min: 1, 
+                            max: todosProdutos.find(p => p.id === item.id)?.quantidade_estoque 
+                          }
+                        }}
+                      />
+                    </TableCell>
                     <TableCell align="right">R$ {Number(item.preco).toFixed(2)}</TableCell>
                     <TableCell align="right">R$ {(item.quantidade * item.preco).toFixed(2)}</TableCell>
                     <TableCell align="center">
@@ -140,7 +214,7 @@ function FrenteDeCaixa() {
         </Grid>
         
         {/* Coluna da Direita: Total e Finalização */}
-        <Grid item xs={12} md={5}>
+        <Grid xs={12} md={5}>
           <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Typography variant="h4">Total</Typography>
             <Typography variant="h3" component="p" sx={{ fontWeight: 'bold' }}>
@@ -174,6 +248,12 @@ function FrenteDeCaixa() {
           </Paper>
         </Grid>
       </Grid>
+      <ManagerOverrideDialog
+        open={overrideDialogOpen}
+        onClose={() => setOverrideDialogOpen(false)}
+        onConfirm={handleManagerAuthorize}
+        error={overrideError}
+      />
     </Container>
   );
 }

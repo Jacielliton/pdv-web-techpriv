@@ -1,7 +1,7 @@
 // src/components/FuncionarioForm.js (VERSÃO COM MUI)
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { TextField, Button, Box, Typography, Grid, Paper, Stack } from '@mui/material';
+import { TextField, Button, Box, Typography, Grid, Paper, Stack, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { toast } from 'react-toastify';
 
 const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdicao }) => {
@@ -78,14 +78,22 @@ const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdica
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField
-              name="cargo"
-              label="Cargo"
-              value={formData.cargo}
-              onChange={handleChange}
-              fullWidth
-              required
-            />
+            <FormControl fullWidth required>
+              <InputLabel id="cargo-select-label">Cargo</InputLabel>
+              <Select
+                labelId="cargo-select-label"
+                id="cargo-select"
+                name="cargo"
+                value={formData.cargo}
+                label="Cargo"
+                onChange={handleChange}
+              >
+                <MenuItem value="gerente">Gerente</MenuItem>
+                <MenuItem value="gerente">Supervisor</MenuItem>
+                <MenuItem value="caixa">Caixa</MenuItem>
+                {/* Adicione outros cargos aqui se desejar */}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
