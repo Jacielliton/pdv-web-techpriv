@@ -1,6 +1,7 @@
-// src/pages/Funcionarios.js (VERSÃO COM MUI)
+// src/pages/Funcionarios.js
+
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api'; // ALTERADO: Importa a instância 'api'
 import FuncionarioForm from '../components/FuncionarioForm';
 import ListaFuncionarios from '../components/ListaFuncionarios';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -10,19 +11,18 @@ import { Container, Typography } from '@mui/material';
 function Funcionarios() {
   const [funcionarios, setFuncionarios] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [funcionarioParaEditar, setFuncionarioParaEditar] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [funcionarioParaDeletar, setFuncionarioParaDeletar] = useState(null);
 
   const fetchFuncionarios = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const response = await axios.get('http://localhost:3333/api/funcionarios');
+      // ALTERADO: Usa 'api' e a URL relativa
+      const response = await api.get('/funcionarios');
       setFuncionarios(response.data);
     } catch (err) {
-      setError('Falha ao carregar funcionários.');
+      toast.error('Falha ao carregar funcionários.');
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,8 @@ function Funcionarios() {
 
   const handleConfirmDelete = async () => {
     try {
-      await axios.delete(`http://localhost:3333/api/funcionarios/${funcionarioParaDeletar}`);
+      // ALTERADO: Usa 'api' e a URL relativa
+      await api.delete(`/funcionarios/${funcionarioParaDeletar}`);
       toast.success('Funcionário excluído com sucesso!');
       fetchFuncionarios();
     } catch (err) {
@@ -78,7 +79,6 @@ function Funcionarios() {
         onDeleteRequest={handleDeleteRequest}
         funcionarios={funcionarios}
         loading={loading}
-        error={error}
       />
       <ConfirmDialog
         open={dialogOpen}

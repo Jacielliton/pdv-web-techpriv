@@ -1,9 +1,10 @@
-// src/pages/Produtos.js (VERSÃO COM MUI)
+// src/pages/Produtos.js
+
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api'; // ALTERADO: Importa a instância 'api'
 import ProdutoForm from '../components/ProdutoForm';
 import ListaProdutos from '../components/ListaProdutos';
-import ConfirmDialog from '../components/ConfirmDialog'; // 1. Importe o diálogo
+import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from 'react-toastify';
 import { Container, Typography } from '@mui/material';
 
@@ -12,18 +13,18 @@ function Produtos() {
   const [produtos, setProdutos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [produtoParaEditar, setProdutoParaEditar] = useState(null);
-
-  // 2. Crie estados para controlar o diálogo
   const [dialogOpen, setDialogOpen] = useState(false);
   const [produtoParaDeletar, setProdutoParaDeletar] = useState(null);
 
   const fetchProdutos = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:3333/api/produtos');
+      // ALTERADO: Usa 'api' e a URL relativa
+      const response = await api.get('/produtos');
       setProdutos(response.data);
     } catch (err) {
       console.error("Falha ao carregar produtos", err);
+      toast.error('Falha ao carregar produtos.');
     } finally {
       setLoading(false);
     }
@@ -46,22 +47,21 @@ function Produtos() {
     setProdutoParaEditar(null);
   };
 
-  // 3. Crie a função para abrir o diálogo
   const handleDeleteRequest = (id) => {
     setProdutoParaDeletar(id);
     setDialogOpen(true);
   };
 
-  // 4. Crie a função que será chamada ao confirmar a exclusão
   const handleConfirmDelete = async () => {
     try {
-      await axios.delete(`http://localhost:3333/api/produtos/${produtoParaDeletar}`);
+      // ALTERADO: Usa 'api' e a URL relativa
+      await api.delete(`/produtos/${produtoParaDeletar}`);
       toast.success('Produto excluído com sucesso!');
       fetchProdutos();
     } catch (err) {
       toast.error('Erro ao excluir produto.');
     } finally {
-      setDialogOpen(false); // Fecha o diálogo
+      setDialogOpen(false);
       setProdutoParaDeletar(null);
     }
   };
@@ -76,14 +76,12 @@ function Produtos() {
         produtoParaEditar={produtoParaEditar}
         limparEdicao={handleCancelEdit}
       />
-      {/* 5. Passe a nova função para o componente de lista */}
       <ListaProdutos
         onEdit={handleEdit}
-        onDeleteRequest={handleDeleteRequest} // <--- passe a nova função
+        onDeleteRequest={handleDeleteRequest}
         produtos={produtos}
         loading={loading}
       />
-      {/* 6. Adicione o componente de diálogo à página */}
       <ConfirmDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}

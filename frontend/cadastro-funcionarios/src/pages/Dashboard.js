@@ -1,5 +1,11 @@
+// src/pages/Dashboard.js
+
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api'; // ALTERADO: Importa a instância 'api'
+import { toast } from 'react-toastify';
+
+// Importando componentes MUI para um visual mais limpo
+import { Container, Typography, Grid, Paper, CircularProgress, List, ListItem, ListItemText } from '@mui/material';
 
 function Dashboard() {
   const [summary, setSummary] = useState({
@@ -8,62 +14,75 @@ function Dashboard() {
     topProdutos: [],
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const response = await axios.get('http://localhost:3333/api/dashboard/summary');
+        // ALTERADO: Usa 'api' e a URL relativa
+        const response = await api.get('/dashboard/summary');
         setSummary(response.data);
       } catch (err) {
         console.error("Erro ao buscar resumo do dashboard:", err);
-        setError("Não foi possível carregar os dados do dashboard.");
+        toast.error("Não foi possível carregar os dados do dashboard.");
       } finally {
         setLoading(false);
       }
     };
     fetchSummary();
   }, []);
-  
-  // Estilos para os cards
-  const cardContainerStyle = { display: 'flex', gap: '20px', marginBottom: '20px' };
-  const cardStyle = { flex: 1, border: '1px solid #ccc', padding: '20px', borderRadius: '8px', textAlign: 'center' };
-  const cardTitleStyle = { fontSize: '18px', margin: '0 0 10px 0' };
-  const cardValueStyle = { fontSize: '32px', fontWeight: 'bold' };
 
-  if (loading) return <p>Carregando dashboard...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  if (loading) return <CircularProgress />;
 
   return (
-    <div>
-      <h1>Dashboard Gerencial</h1>
+    <Container maxWidth="lg">
+      <Typography variant="h4" component="h1" gutterBottom>
+        Dashboard Gerencial
+      </Typography>
 
-      <div style={cardContainerStyle}>
-        <div style={cardStyle}>
-          <h2 style={cardTitleStyle}>Total Vendido Hoje</h2>
-          <p style={cardValueStyle}>R$ {Number(summary.totalVendidoHoje).toFixed(2)}</p>
-        </div>
-        <div style={cardStyle}>
-          <h2 style={cardTitleStyle}>Número de Vendas Hoje</h2>
-          <p style={cardValueStyle}>{summary.numeroDeVendasHoje}</p>
-        </div>
-      </div>
+      <Grid container spacing={3}>
+        <Grid item xs={12} sm={6}>
+          <Paper elevation={3} sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6">Total Vendido Hoje</Typography>
+            <Typography variant="h4" component="p" sx={{ fontWeight: 'bold' }}>
+              R$ {Number(summary.totalVendidoHoje).toFixed(2)}
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Paper elevation={3} sx={{ p: 2, textAlign: 'center' }}>
+            <Typography variant="h6">Número de Vendas Hoje</Typography>
+            <Typography variant="h4" component="p" sx={{ fontWeight: 'bold' }}>
+              {summary.numeroDeVendasHoje}
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
 
-      <div>
-        <h3>Top 5 Produtos Mais Vendidos</h3>
+      <Paper elevation={3} sx={{ mt: 4, p: 2 }}>
+        <Typography variant="h5" component="h3" gutterBottom>
+          Top 5 Produtos Mais Vendidos
+        </Typography>
         {summary.topProdutos.length === 0 ? (
-          <p>Nenhum produto vendido hoje.</p>
+          <Typography>Nenhum produto vendido hoje.</Typography>
         ) : (
-          <ol>
+          <List>
             {summary.topProdutos.map(produto => (
-              <li key={produto.nome}>
-                {produto.nome} - <strong>{produto.total_vendido}</strong> unidades vendidas
-              </li>
+              <ListItem key={produto.nome}>
+                <ListItemText 
+                  primary={produto.nome}
+                  secondary={
+                    <>
+                      <strong>{produto.total_vendido}</strong> unidades vendidas
+                    </>
+                  }
+                />
+              </ListItem>
             ))}
-          </ol>
+          </List>
+
         )}
-      </div>
-    </div>
+      </Paper>
+    </Container>
   );
 }
 
