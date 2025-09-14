@@ -4,9 +4,6 @@ import axios from 'axios';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'react-toastify';
 import ManagerOverrideDialog from '../components/ManagerOverrideDialog';
-import QRCode from 'qrcode.react'; // Importe a biblioteca do QR Code
-import { Dialog, DialogTitle, DialogContent, DialogContentText } from '@mui/material'; // Importe o Dialog
-
 import { 
   Container, Typography, Grid, TextField, List, ListItem, ListItemButton, ListItemText,
   Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -14,42 +11,26 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-
-
-
 function FrenteDeCaixa() {
   const { user, isManager } = useAuth();
   const [todosProdutos, setTodosProdutos] = useState([]);
   const [termoBusca, setTermoBusca] = useState('');
   const [carrinho, setCarrinho] = useState([]);
   const [metodoPagamento, setMetodoPagamento] = useState('Dinheiro');
+  const [valorPago, setValorPago] = useState('');
+  const [troco, setTroco] = useState(0);
+
+  // Estados para autorização de gerente
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [itemParaRemover, setItemParaRemover] = useState(null);
   const [overrideError, setOverrideError] = useState('');
+
+  // Estados para a integração com PagSeguro
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState('');
   const [pagamentoPendente, setPagamentoPendente] = useState(false);
 
-  // 1. NOVOS ESTADOS PARA VALOR PAGO E TROCO
-  const [valorPago, setValorPago] = useState('');
-  const [troco, setTroco] = useState(0);
-
-  // Busca a lista de maquininhas disponíveis ao carregar
-  useEffect(() => {
-    const fetchDevices = async () => {
-      try {
-        const response = await axios.get('http://localhost:3333/api/pagamento/pagseguro/devices');
-        setDevices(response.data);
-        if (response.data.length > 0) {
-          setSelectedDevice(response.data[0].id); // Seleciona a primeira por padrão
-        }
-      } catch (error) {
-        toast.error('Não foi possível encontrar maquininhas conectadas.');
-      }
-    };
-    fetchDevices();
-  }, []);
-
+  // Busca a lista de produtos
   useEffect(() => {
     const fetchProdutos = async () => {
       try {
@@ -60,6 +41,23 @@ function FrenteDeCaixa() {
       }
     };
     fetchProdutos();
+  }, []);
+
+  // Busca os dispositivos PagSeguro disponíveis (celulares com Tap on Phone)
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const response = await axios.get('http://localhost:3333/api/pagamento/pagseguro/devices');
+        setDevices(response.data);
+        if (response.data.length > 0) {
+          setSelectedDevice(response.data[0].id); // Seleciona o primeiro dispositivo por padrão
+        }
+      } catch (error) {
+        // Silencia o erro caso nenhuma maquininha seja encontrada
+        console.error("Nenhum dispositivo PagSeguro encontrado.");
+      }
+    };
+    fetchDevices();
   }, []);
 
   const produtosFiltrados = useMemo(() => {
@@ -134,36 +132,59 @@ function FrenteDeCaixa() {
   const [qrCodeText, setQrCodeText] = useState('');
   const [isQrCodeDialogOpen, setIsQrCodeDialogOpen] = useState(false);
 
+  // Função principal para finalizar a venda
   const finalizarVenda = async () => {
-    if (carrinho.length === 0) { /* ... */ }
+    if (carrinho.length === 0) {
+      toast.error('Adicione pelo menos um item à venda.');
+      return;
+    }
+
+    // Lógica para registrar venda com métodos simples (Dinheiro, Pix, etc.)
+    const registrarVendaNoSistema = async (metodo) => {
+      const payload = {
+        valor_total: totalVenda,
+        metodo_pagamento: metodo,
+        itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
+      };
+      try {
+        await axios.post('http://localhost:3333/api/vendas', payload);
+        toast.success('Venda registrada no sistema com sucesso!');
+        setCarrinho([]);
+        setValorPago('');
+      } catch (error) {
+        toast.error(error.response?.data?.error || 'Erro ao registrar a venda no sistema.');
+      }
+    };
 
     if (metodoPagamento === 'Cartão (PagSeguro)') {
       if (!selectedDevice) {
-        toast.error('Selecione uma maquininha para continuar.');
+        toast.error('Nenhum dispositivo (Tap on Phone) selecionado ou disponível.');
         return;
       }
       setPagamentoPendente(true);
-      toast.info('Enviando cobrança para a maquininha...');
+      toast.info('Enviando cobrança para o dispositivo...');
       
       const payload = {
         valor_total: totalVenda,
         itens: carrinho.map(item => ({ nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
-        device_id: selectedDevice, // Envia o ID da maquininha selecionada
+        device_id: selectedDevice,
       };
 
       try {
         await axios.post('http://localhost:3333/api/pagamento/pagseguro/order', payload);
-        // A confirmação agora vem pelo Webhook no backend.
-        // O frontend pode apenas aguardar e limpar o carrinho.
-        toast.success('Cobrança enviada! Aguarde o pagamento do cliente.');
+        toast.success('Cobrança enviada! Aguarde o pagamento do cliente no celular.');
+        // A confirmação final da venda e atualização do estoque ocorrerá via Webhook no backend.
+        // Por enquanto, apenas limpamos o carrinho para a próxima venda.
         setCarrinho([]);
+        setValorPago('');
       } catch (error) {
-        toast.error('Erro ao enviar cobrança para a maquininha.');
+        toast.error('Erro ao enviar cobrança para o dispositivo.');
       } finally {
         setPagamentoPendente(false);
       }
     } else {
-      // Lógica para outros pagamentos
+      // Para outros métodos, apenas registra no nosso sistema
+      await registrarVendaNoSistema(metodoPagamento);
     }
   };
 
@@ -271,79 +292,74 @@ function FrenteDeCaixa() {
         
         {/* Coluna da Direita: Total e Finalização */}
       <Grid item xs={12} md={5}>
-        <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Typography variant="h4">Total</Typography>
-          <Typography variant="h3" component="p" sx={{ fontWeight: 'bold' }}>
-            R$ {totalVenda.toFixed(2)}
-          </Typography>
-          
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Método de Pagamento</InputLabel>
-            <Select
-              value={metodoPagamento}
-              label="Método de Pagamento"
-              onChange={e => setMetodoPagamento(e.target.value)}
-            >
-              <MenuItem value="Dinheiro">Dinheiro</MenuItem>
-              <MenuItem value="Cartão de Crédito">Cartão de Crédito</MenuItem>
-              <MenuItem value="Cartão de Débito">Cartão de Débito</MenuItem>
-              <MenuItem value="Pix">Pix</MenuItem>
-              {/* Adicione a opção do PagSeguro aqui */}
-              <MenuItem value="Cartão (PagSeguro)">Cartão (PagSeguro)</MenuItem> 
-            </Select>
-          </FormControl>
+          <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="h4">Total</Typography>
+            <Typography variant="h3" component="p" sx={{ fontWeight: 'bold' }}>
+              R$ {totalVenda.toFixed(2)}
+            </Typography>
+            
+            <FormControl fullWidth>
+              <InputLabel>Método de Pagamento</InputLabel>
+              <Select
+                value={metodoPagamento}
+                label="Método de Pagamento"
+                onChange={e => setMetodoPagamento(e.target.value)}
+              >
+                <MenuItem value="Dinheiro">Dinheiro</MenuItem>
+                <MenuItem value="Cartão (PagSeguro)">Cartão (Tap on Phone)</MenuItem>
+                <MenuItem value="Pix">Pix</MenuItem>
+              </Select>
+            </FormControl>
 
-          {/* O seletor da maquininha fica FORA e abaixo do seletor de pagamento */}
             {metodoPagamento === 'Cartão (PagSeguro)' && (
               <FormControl fullWidth>
-                <InputLabel>Maquininha</InputLabel>
+                <InputLabel>Dispositivo</InputLabel>
                 <Select
                   value={selectedDevice}
-                  label="Maquininha"
+                  label="Dispositivo"
                   onChange={e => setSelectedDevice(e.target.value)}
                   disabled={devices.length === 0}
                 >
-                  {devices.map(device => (
-                    <MenuItem key={device.id} value={device.id}>{device.display_name}</MenuItem>
-                  ))}
+                  {devices.length > 0 ? (
+                    devices.map(device => (
+                      <MenuItem key={device.id} value={device.id}>{device.display_name}</MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>Nenhum dispositivo online</MenuItem>
+                  )}
                 </Select>
               </FormControl>
             )}
-          
+            
+            {metodoPagamento === 'Dinheiro' && (
+              <TextField
+                label="Valor Pago"
+                type="number"
+                fullWidth
+                value={valorPago}
+                onChange={(e) => setValorPago(e.target.value)}
+              />
+            )}
+            
+            {troco > 0 && (
+              <div>
+                <Typography variant="h6">Troco</Typography>
+                <Typography variant="h4" component="p" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                  R$ {troco.toFixed(2)}
+                </Typography>
+              </div>
+            )}
 
-          {/* 3. NOVO TEXTFIELD PARA O "VALOR PAGO" */}
-          {metodoPagamento === 'Dinheiro' && (
-            <TextField
-              label="Valor Pago"
-              type="number"
-              fullWidth
-              value={valorPago}
-              onChange={(e) => setValorPago(e.target.value)}
-              InputProps={{
-                startAdornment: <Typography sx={{ mr: 1 }}>R$</Typography>,
-              }}
-            />
-          )}
-
-          {/* 4. EXIBIÇÃO DO TROCO CALCULADO */}
-          {troco > 0 && (
-            <div>
-              <Typography variant="h6">Troco</Typography>
-              <Typography variant="h4" component="p" sx={{ fontWeight: 'bold', color: 'blue' }}>
-                R$ {troco.toFixed(2)}
-              </Typography>
-            </div>
-          )}
-
-          <Button
-            variant="contained"
-            color="success"
-            onClick={finalizarVenda}
-            disabled={carrinho.length === 0 || pagamentoPendente}
-            sx={{ mt: 2, p: 2, fontSize: '1.2rem' }}
-          >
-            Finalizar Venda
-          </Button>
+            <Button
+              variant="contained"
+              color="success"
+              size="large"
+              onClick={finalizarVenda}
+              disabled={carrinho.length === 0 || pagamentoPendente}
+              sx={{ mt: 2, p: 2, fontSize: '1.2rem' }}
+            >
+              {pagamentoPendente ? 'Aguardando...' : 'Finalizar Venda'}
+            </Button>
         </Paper>
       </Grid>
       </Grid>
