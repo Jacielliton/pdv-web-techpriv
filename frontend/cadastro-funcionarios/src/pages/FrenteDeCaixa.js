@@ -4,13 +4,14 @@ import axios from 'axios'; // MANTENHA o axios global para a chamada de login
 import api from '../services/api'; // IMPORTE a nova instância configurada
 import { useAuth } from '../contexts/auth';
 import ModalAberturaCaixa from '../components/ModalAberturaCaixa';
+import ModalMovimentacaoCaixa from '../components/ModalMovimentacaoCaixa';
 import { toast } from 'react-toastify';
 import ManagerOverrideDialog from '../components/ManagerOverrideDialog';
 import { 
   Container, Typography, Grid, TextField, List, ListItem, ListItemButton, ListItemText,
   Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Button, Select, MenuItem, FormControl, InputLabel, IconButton,
-  Box, CircularProgress
+  Box, CircularProgress, Stack 
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -28,6 +29,9 @@ function FrenteDeCaixa() {
   const [devices, setDevices] = useState([]);
   const [selectedDevice, setSelectedDevice] = useState('');
   const [pagamentoPendente, setPagamentoPendente] = useState(false);
+  const [modalMovimentacaoOpen, setModalMovimentacaoOpen] = useState(false);
+  const [tipoMovimentacao, setTipoMovimentacao] = useState(''); // 'SANGRIA' ou 'SUPRIMENTO'
+
 
   // Busca a lista de produtos
   useEffect(() => {
@@ -83,6 +87,15 @@ function FrenteDeCaixa() {
     }
   }, [valorPago, totalVenda]);
 
+   const handleOpenMovimentacaoModal = (tipo) => {
+    setTipoMovimentacao(tipo);
+    setModalMovimentacaoOpen(true);
+  };
+  
+  const handleCloseMovimentacaoModal = () => {
+    setModalMovimentacaoOpen(false);
+  };
+
   const adicionarAoCarrinho = (produto) => {
     setCarrinho(carrinhoAtual => {
       const produtoExistente = carrinhoAtual.find(item => item.id === produto.id);
@@ -95,6 +108,7 @@ function FrenteDeCaixa() {
     });
     setTermoBusca('');
   };
+  
 
   const removerDoCarrinho = (produtoId) => {
     if (isManager) {
@@ -347,6 +361,15 @@ function FrenteDeCaixa() {
               </div>
             )}
 
+            <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                <Button variant="outlined" fullWidth onClick={() => handleOpenMovimentacaoModal('SANGRIA')}>
+                    Registrar Sangria
+                </Button>
+                <Button variant="outlined" fullWidth onClick={() => handleOpenMovimentacaoModal('SUPRIMENTO')}>
+                    Registrar Suprimento
+                </Button>
+            </Stack>
+
             <Button
               variant="contained"
               color="success"
@@ -365,6 +388,11 @@ function FrenteDeCaixa() {
         onClose={() => setOverrideDialogOpen(false)}
         onConfirm={handleManagerAuthorize}
         error={overrideError}
+      />
+      <ModalMovimentacaoCaixa
+        open={modalMovimentacaoOpen}
+        onClose={handleCloseMovimentacaoModal}
+        tipo={tipoMovimentacao}
       />
     </Container>
   );

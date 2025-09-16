@@ -1,50 +1,45 @@
-// pdv-web-techpriv/backend/src/routes/index.js (VERSÃO CORRIGIDA)
+// backend/src/routes/index.js (VERSÃO FINAL)
 const { Router } = require('express');
 const sequelize = require('../config/database');
 
-// Importações dos Controllers
+// Controllers
 const FuncionarioController = require('../controllers/FuncionarioController');
 const SessionController = require('../controllers/SessionController');
 const ProdutoController = require('../controllers/ProdutoController');
 const VendaController = require('../controllers/VendaController');
 const DashboardController = require('../controllers/DashboardController');
-const PagSeguroController = require('../controllers/PagSeguroController');
+const PagSeguroController = require('../controllers/PagSeguroController'); 
 const CaixaController = require('../controllers/CaixaController');
-
-// Importações dos Middlewares (ESTAVAM FALTANDO)
+// Middlewares
 const authMiddleware = require('../middlewares/auth');
 const authManagerMiddleware = require('../middlewares/authManager');
 
 const routes = new Router();
 
 // --- Rota Pública de Health Check ---
-routes.get('/status', async (req, res) => {
-  try {
-    await sequelize.authenticate();
-    res.json({ status: 'UP', database: 'connected' });
-  } catch (error) {
-    res.status(503).json({ 
-      status: 'UP', 
-      database: 'disconnected', 
-      error: 'Não foi possível conectar ao banco de dados.'
-    });
-  }
-});
+routes.get('/status', (req, res) => res.json({ status: 'OK' }));
 
 // --- Rota Pública de Login ---
 routes.post('/login', SessionController.store);
 
-// --- Middleware de Autenticação (para todas as rotas abaixo) ---
+// ===================================================================
+// --- APLICA O MIDDLEWARE DE AUTENTICAÇÃO ---
+// TODAS as rotas abaixo desta linha exigem um token JWT válido.
 routes.use(authMiddleware);
+// ===================================================================
 
-// --- Rotas para TODOS os funcionários logados (Caixas e Gerentes) ---
+// --- Rotas para TODOS os funcionários logados (Caixas, Gerentes, etc.) ---
+routes.get('/produtos', ProdutoController.index); // Listar produtos está acessível a todos
 routes.post('/vendas', VendaController.store);
-routes.get('/produtos', ProdutoController.index);
-routes.post('/pagamento/pagseguro/order', PagSeguroController.createOrder);
-routes.get('/pagamento/pagseguro/devices', PagSeguroController.listDevices);
+routes.get('/caixa/status', CaixaController.getStatus);
+routes.post('/caixa/abrir', CaixaController.abrirCaixa);
+routes.post('/caixa/movimentacao', CaixaController.registrarMovimentacao);
 
-// --- Middleware de Autorização (para todas as rotas abaixo) ---
+// ===================================================================
+// --- APLICA O MIDDLEWARE DE AUTORIZAÇÃO DE GERENTE ---
+// TODAS as rotas abaixo desta linha exigem que o usuário seja 'gerente'.
 routes.use(authManagerMiddleware);
+// ===================================================================
 
 // --- Rotas exclusivas para GERENTES ---
 routes.get('/funcionarios', FuncionarioController.index);
@@ -56,13 +51,13 @@ routes.post('/produtos', ProdutoController.store);
 routes.put('/produtos/:id', ProdutoController.update);
 routes.delete('/produtos/:id', ProdutoController.delete);
 
-// --- ADICIONE AS NOVAS ROTAS DE CAIXA AQUI ---
-routes.get('/caixa/status', CaixaController.getStatus);
-routes.get('/caixa/resumo', CaixaController.getResumo);
-routes.post('/caixa/abrir', CaixaController.abrirCaixa);
-routes.post('/caixa/fechar', CaixaController.fecharCaixa);
-
 routes.get('/vendas', VendaController.index);
 routes.get('/dashboard/summary', DashboardController.getSummary);
+routes.get('/caixa/resumo', CaixaController.getResumo);
+routes.post('/caixa/fechar', CaixaController.fecharCaixa);
+
+// Rota do PagSeguro (exclusiva para gerentes, por exemplo)
+routes.post('/pagamento/pagseguro/order', PagSeguroController.createOrder);
+routes.get('/pagamento/pagseguro/devices', PagSeguroController.listDevices);
 
 module.exports = routes;

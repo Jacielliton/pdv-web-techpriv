@@ -11,6 +11,7 @@ const VendaItem = require('./models/VendaItem');
 const Funcionario = require('./models/Funcionario');
 const Produto = require('./models/Produto');
 const Caixa = require('./models/Caixa'); 
+const MovimentacaoCaixa = require('./models/MovimentacaoCaixa'); 
 
 // --- Inicialização do App ---
 const app = express();
