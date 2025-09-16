@@ -3,17 +3,19 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios'; // MANTENHA o axios global para a chamada de login
 import api from '../services/api'; // IMPORTE a nova instância configurada
 import { useAuth } from '../contexts/auth';
+import ModalAberturaCaixa from '../components/ModalAberturaCaixa';
 import { toast } from 'react-toastify';
 import ManagerOverrideDialog from '../components/ManagerOverrideDialog';
 import { 
   Container, Typography, Grid, TextField, List, ListItem, ListItemButton, ListItemText,
   Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Button, Select, MenuItem, FormControl, InputLabel, IconButton
+  Button, Select, MenuItem, FormControl, InputLabel, IconButton,
+  Box, CircularProgress
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 function FrenteDeCaixa() {
-  const { user, isManager } = useAuth();
+  const { user, isManager, caixaStatus, loadingCaixa } = useAuth();
   const [todosProdutos, setTodosProdutos] = useState([]);
   const [termoBusca, setTermoBusca] = useState('');
   const [carrinho, setCarrinho] = useState([]);
@@ -57,6 +59,8 @@ function FrenteDeCaixa() {
     };
     fetchDevices();
   }, []);
+
+  
 
   const produtosFiltrados = useMemo(() => {
     if (termoBusca.length < 2) return [];
@@ -192,6 +196,19 @@ function FrenteDeCaixa() {
       )
     );
   };
+
+  if (loadingCaixa) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Verificando status do caixa...</Typography>
+      </Box>
+    );
+  }
+
+  if (caixaStatus === 'FECHADO') {
+    return <ModalAberturaCaixa open={true} />;
+  }
 
   return (
     <Container maxWidth="lg">

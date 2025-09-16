@@ -1,6 +1,6 @@
 // src/components/ProdutoForm.js (VERSÃO COM MUI)
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { TextField, Button, Box, Typography, Grid, Paper, Stack } from '@mui/material';
 import { toast } from 'react-toastify';
 
@@ -36,13 +36,12 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const url = isEditing
-      ? `http://localhost:3333/api/produtos/${produtoParaEditar.id}`
-      : 'http://localhost:3333/api/produtos';
+    const url = isEditing ? `/produtos/${produtoParaEditar.id}` : '/produtos';
     const method = isEditing ? 'put' : 'post';
 
     try {
-      await axios[method](url, formData);
+      // ALTERADO: Usa a instância 'api'
+      await api[method](url, formData);
       toast.success(`Produto ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso!`);
       limparFormulario();
       if (onSucesso) onSucesso();

@@ -9,6 +9,7 @@ const ProdutoController = require('../controllers/ProdutoController');
 const VendaController = require('../controllers/VendaController');
 const DashboardController = require('../controllers/DashboardController');
 const PagSeguroController = require('../controllers/PagSeguroController');
+const CaixaController = require('../controllers/CaixaController');
 
 // Importações dos Middlewares (ESTAVAM FALTANDO)
 const authMiddleware = require('../middlewares/auth');
@@ -54,6 +55,12 @@ routes.delete('/funcionarios/:id', FuncionarioController.delete);
 routes.post('/produtos', ProdutoController.store);
 routes.put('/produtos/:id', ProdutoController.update);
 routes.delete('/produtos/:id', ProdutoController.delete);
+
+// --- ADICIONE AS NOVAS ROTAS DE CAIXA AQUI ---
+routes.get('/caixa/status', CaixaController.getStatus);
+routes.get('/caixa/resumo', CaixaController.getResumo);
+routes.post('/caixa/abrir', CaixaController.abrirCaixa);
+routes.post('/caixa/fechar', CaixaController.fecharCaixa);
 
 routes.get('/vendas', VendaController.index);
 routes.get('/dashboard/summary', DashboardController.getSummary);

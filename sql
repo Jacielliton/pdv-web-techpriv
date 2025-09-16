@@ -1,62 +1,63 @@
+-- PASSO 1: Apaga as tabelas antigas na ordem correta para evitar erros de dependência.
+DROP TABLE IF EXISTS venda_itens;
+DROP TABLE IF EXISTS vendas;
+DROP TABLE IF EXISTS caixas;
+DROP TABLE IF EXISTS produtos;
+DROP TABLE IF EXISTS funcionarios;
+
+-- PASSO 2: Cria toda a estrutura de tabelas novamente.
+
+-- Tabela de Funcionários
 CREATE TABLE funcionarios (
     id SERIAL PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    cargo VARCHAR(50) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
+    nome VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
-    data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT now()
+    cargo VARCHAR(255) NOT NULL
 );
 
--- Opcional: Inserir um funcionário de exemplo para testes
-INSERT INTO funcionarios (nome, cargo, email, senha_hash) VALUES
-('Administrador', 'Gerente', 'admin@email.com', 'hash_da_senha_aqui');
-
-
+-- Tabela de Produtos
 CREATE TABLE produtos (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     descricao TEXT,
-    preco NUMERIC(10, 2) NOT NULL CHECK (preco >= 0),
-    quantidade_estoque INTEGER NOT NULL DEFAULT 0 CHECK (quantidade_estoque >= 0),
-    codigo_barras VARCHAR(50) UNIQUE,
-    data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT now()
+    preco NUMERIC(10, 2) NOT NULL,
+    quantidade_estoque INTEGER NOT NULL DEFAULT 0,
+    codigo_barras VARCHAR(255) UNIQUE
 );
 
-INSERT INTO produtos (nome, descricao, preco, quantidade_estoque, codigo_barras) VALUES
-('Coca-Cola Lata 350ml', 'Refrigerante de cola gelado', 4.50, 100, '7894900011517'),
-('Salgado de Queijo', 'Salgado assado recheado com queijo minas', 7.00, 50, '1000000000001'),
-('Água Mineral 500ml', 'Água mineral natural sem gás', 2.50, 200, NULL);
+-- Tabela de Caixas
+CREATE TABLE caixas (
+    id SERIAL PRIMARY KEY,
+    data_abertura TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    data_fechamento TIMESTAMP WITH TIME ZONE,
+    valor_inicial NUMERIC(10, 2) NOT NULL,
+    valor_final_calculado NUMERIC(10, 2),
+    valor_final_informado NUMERIC(10, 2),
+    diferenca NUMERIC(10, 2),
+    status VARCHAR(255) NOT NULL DEFAULT 'ABERTO',
+    funcionario_id INTEGER NOT NULL REFERENCES funcionarios(id) ON DELETE RESTRICT ON UPDATE CASCADE
+);
 
--- Tabela para armazenar o "cabeçalho" de cada venda
+-- Tabela de Vendas
 CREATE TABLE vendas (
     id SERIAL PRIMARY KEY,
-    funcionario_id INTEGER NOT NULL,
     valor_total NUMERIC(10, 2) NOT NULL,
-    metodo_pagamento VARCHAR(50),
+    metodo_pagamento VARCHAR(255) NOT NULL,
     data_venda TIMESTAMP WITH TIME ZONE DEFAULT now(),
-
-    -- Cria a relação com a tabela de funcionários
-    CONSTRAINT fk_funcionario
-        FOREIGN KEY(funcionario_id) 
-        REFERENCES funcionarios(id)
+    funcionario_id INTEGER NOT NULL REFERENCES funcionarios(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    caixa_id INTEGER NOT NULL REFERENCES caixas(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
--- Tabela para armazenar cada item de uma venda
+-- Tabela de Itens da Venda
 CREATE TABLE venda_itens (
     id SERIAL PRIMARY KEY,
-    venda_id INTEGER NOT NULL,
-    produto_id INTEGER NOT NULL,
     quantidade INTEGER NOT NULL,
     preco_unitario NUMERIC(10, 2) NOT NULL,
-
-    -- Cria a relação com a tabela de vendas. Se uma venda for deletada, seus itens também serão.
-    CONSTRAINT fk_venda
-        FOREIGN KEY(venda_id) 
-        REFERENCES vendas(id)
-        ON DELETE CASCADE,
-
-    -- Cria a relação com a tabela de produtos
-    CONSTRAINT fk_produto
-        FOREIGN KEY(produto_id) 
-        REFERENCES produtos(id)
+    venda_id INTEGER NOT NULL REFERENCES vendas(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    produto_id INTEGER NOT NULL REFERENCES produtos(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
+
+-- PASSO 3: Insere o usuário Administrador/Gerente com o hash fornecido.
+INSERT INTO funcionarios (nome, email, senha_hash, cargo) VALUES 
+('Admin', 'admin@pdv.com', '$2b$08$TTWDh6C40HrrsHrhSdRhX.xfH783Mdukqmyr35sPtuwATABxlJ8fO', 'gerente');

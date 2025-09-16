@@ -1,46 +1,85 @@
+// frontend/src/contexts/auth.js (versão atualizada)
+
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios'; // Usado SOMENTE para a chamada de login pública
-import api from '../services/api'; // ALTERAÇÃO 1: Importe a instância dedicada
+import axios from 'axios';
+import api from '../services/api';
 
 const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [caixaStatus, setCaixaStatus] = useState('FECHADO');
+  const [loadingCaixa, setLoadingCaixa] = useState(true);
 
   useEffect(() => {
-    async function loadStoragedData() {
+    // --- NOVO: INTERCEPTOR PARA AUTO-LOGOUT ---
+    const interceptor = api.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.response?.status === 401) {
+          // Se qualquer chamada der 401, o token é inválido. Desloga o usuário.
+          signOut();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    async function loadStorageData() {
       const storagedUser = localStorage.getItem('@PDV:user');
       const storagedToken = localStorage.getItem('@PDV:token');
 
-      if (storagedUser && storagedToken) {
-        // ALTERAÇÃO CRÍTICA: Configure a instância 'api', não a global 'axios'
+      if (storagedToken && storagedUser) {
         api.defaults.headers.Authorization = `Bearer ${storagedToken}`;
         setUser(JSON.parse(storagedUser));
+        await checkCaixaStatus();
       }
       setLoading(false);
     }
-    loadStoragedData();
+
+    loadStorageData();
+
+    // Limpa o interceptor quando o componente é desmontado
+    return () => api.interceptors.response.eject(interceptor);
   }, []);
+
+  async function checkCaixaStatus() {
+    setLoadingCaixa(true);
+    try {
+      const response = await api.get('/caixa/status');
+      setCaixaStatus(response.data.status);
+    } catch (error) {
+      console.error("Erro ao verificar status do caixa", error);
+      // Não precisa deslogar aqui, o interceptor já faz isso.
+    } finally {
+      setLoadingCaixa(false);
+    }
+  }
+
+  async function abrirCaixa(valorInicial) {
+    try {
+      await api.post('/caixa/abrir', { valor_inicial: valorInicial });
+      await checkCaixaStatus();
+    } catch (error) {
+      throw error;
+    }
+  }
 
   async function signIn(credentials) {
     try {
       const response = await axios.post('http://localhost:3333/api/login', credentials);
       const { funcionario, token } = response.data;
-
-      // Salva os dados no localStorage PRIMEIRO para garantir consistência
-      localStorage.setItem('@PDV:user', JSON.stringify(funcionario));
+      
+      localStorage.setItem('@PDV:user', JSON.stringify(funcionario)); 
       localStorage.setItem('@PDV:token', token);
-
-      // ALTERAÇÃO CRÍTICA: Configure a instância 'api' após o login
+      
       api.defaults.headers.Authorization = `Bearer ${token}`;
-
-      // Atualiza o estado da aplicação
       setUser(funcionario);
+      
+      // Após o login, verifica imediatamente o status do caixa
+      await checkCaixaStatus();
 
     } catch (error) {
-      console.error('Erro no login:', error);
-      // Re-lança o erro para o componente de Login poder tratar
       throw error; 
     }
   }
@@ -48,22 +87,27 @@ export const AuthProvider = ({ children }) => {
   function signOut() {
     localStorage.removeItem('@PDV:user');
     localStorage.removeItem('@PDV:token');
-    
-    // Boa prática: Limpe também o header da instância api
     delete api.defaults.headers.Authorization;
-
     setUser(null);
+    setCaixaStatus('FECHADO'); // Reseta o status do caixa no logout
   }
+  
+  const signed = !!user; 
+  const isManager = user?.cargo === 'gerente';
 
   return (
     <AuthContext.Provider 
       value={{ 
-        signed: !!user, 
+        signed, 
         user, 
         loading, 
         signIn, 
         signOut,        
-        isManager: user?.cargo === 'gerente' 
+        isManager,
+        // --- EXPORTANDO NOVOS VALORES ---
+        caixaStatus,
+        loadingCaixa,
+        abrirCaixa
       }}
     >
       {children}

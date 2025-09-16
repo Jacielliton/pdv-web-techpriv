@@ -10,6 +10,7 @@ const Venda = require('./models/Venda');
 const VendaItem = require('./models/VendaItem');
 const Funcionario = require('./models/Funcionario');
 const Produto = require('./models/Produto');
+const Caixa = require('./models/Caixa'); 
 
 // --- Inicialização do App ---
 const app = express();
@@ -32,6 +33,16 @@ VendaItem.belongsTo(Venda, { foreignKey: 'venda_id' });
 Produto.hasMany(VendaItem, { foreignKey: 'produto_id' });
 VendaItem.belongsTo(Produto, { foreignKey: 'produto_id' });
 
+// Relação: Caixa <-> Funcionário
+// Um funcionário pode ter várias sessões de caixa, mas uma sessão pertence a um único funcionário.
+Funcionario.hasMany(Caixa, { foreignKey: 'funcionario_id' });
+Caixa.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
+
+// Relação: Caixa <-> Venda
+// Uma sessão de caixa pode ter várias vendas, mas uma venda pertence a uma única sessão.
+Caixa.hasMany(Venda, { foreignKey: 'caixa_id' });
+Venda.belongsTo(Caixa, { foreignKey: 'caixa_id' });
+
 // --- Rotas da API ---
 app.use('/api', routes); // Prefixo '/api' para todas as rotas
 
@@ -43,6 +54,12 @@ if (process.env.NODE_ENV !== 'test') {
   sequelize.authenticate()
     .then(() => {
       console.log('✅ Conexão com o banco de dados estabelecida com sucesso.');
+
+      // ESTA É A LINHA QUE CRIA/ALTERA AS TABELAS
+      return sequelize.sync({ alter: true }); 
+    })
+    .then(() => {
+      // Só depois de sincronizar, o servidor começa a ouvir
       app.listen(PORT, () => {
         console.log(`🚀 Servidor rodando na porta ${PORT}`);
       });

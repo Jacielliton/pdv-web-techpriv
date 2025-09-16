@@ -11,10 +11,18 @@ VendaItem.init({
   },
   venda_id: {
     type: DataTypes.INTEGER,
+    references: {
+      model: 'vendas', // <--- CORRIGIDO
+      key: 'id',
+    },
     allowNull: false,
   },
   produto_id: {
     type: DataTypes.INTEGER,
+    references: {
+      model: 'produtos', // <--- CORRIGIDO
+      key: 'id',
+    },
     allowNull: false,
   },
   quantidade: {

@@ -1,11 +1,10 @@
-// pdv-web-techpriv\backend\src\controllers\FuncionarioController.js
+// pdv-web-techpriv\backend\src/controllers\FuncionarioController.js (VERSÃO CORRIGIDA)
 const Funcionario = require('../models/Funcionario');
 const Yup = require('yup');
 
 class FuncionarioController {
   // Método para cadastrar um novo funcionário
   async store(req, res) {
-    // Define um esquema de validação
     const schema = Yup.object().shape({
       nome: Yup.string().required('O nome é obrigatório.'),
       cargo: Yup.string().required('O cargo é obrigatório.'),
@@ -14,25 +13,21 @@ class FuncionarioController {
     });
 
     try {
-      // Valida o corpo da requisição
       await schema.validate(req.body, { abortEarly: false });
-      const { nome, cargo, email, senha } = req.body;     
-
-      // Renomeamos 'senha' para 'senha_hash' para corresponder ao modelo
-      const novoFuncionario = await Funcionario.create({ nome, cargo, email, senha_hash: senha });
       
-      // Não retorne a senha_hash na resposta
-      const { senha_hash, ...funcionarioCriado } = novoFuncionario.get({ plain: true });
-
-      return res.status(201).json(funcionarioCriado);
+      // --- CORREÇÃO APLICADA ---
+      // Passamos o req.body diretamente. O modelo usará o campo virtual 'senha'
+      // e o hook beforeCreate irá gerar o 'senha_hash' automaticamente.
+      const novoFuncionario = await Funcionario.create(req.body);
+      
+      return res.status(201).json(novoFuncionario);
     } catch (error) {
-      // Verifica se o erro é de e-mail duplicado
       if (error.name === 'SequelizeUniqueConstraintError') {
         return res.status(400).json({ error: 'Este e-mail já está em uso.' });
       }
       if (error instanceof Yup.ValidationError) {
-            return res.status(400).json({ error: 'Erro de validação.', details: error.errors });
-        }
+        return res.status(400).json({ error: 'Erro de validação.', details: error.errors });
+      }
       return res.status(500).json({ error: 'Erro ao cadastrar funcionário.', details: error.message });
     }
   }
@@ -40,69 +35,76 @@ class FuncionarioController {
   // Método para listar todos os funcionários
   async index(req, res) {
     try {
-        const funcionarios = await Funcionario.findAll({
-            attributes: ['id', 'nome', 'cargo', 'email', 'data_cadastro'] // Exclui o hash da senha
-        });
-        return res.json(funcionarios);
+      // --- CORREÇÃO APLICADA ---
+      // Removemos 'data_cadastro' pois não está definido no modelo Sequelize.
+      const funcionarios = await Funcionario.findAll({
+        attributes: ['id', 'nome', 'cargo', 'email'],
+        order: [['nome', 'ASC']],
+      });
+      return res.json(funcionarios);
     } catch (error) {
-        return res.status(500).json({ error: 'Erro ao listar funcionários.' });
+      return res.status(500).json({ error: 'Erro ao listar funcionários.', details: error.message });
     }
   }
 
-    // Método para atualizar um funcionário
-    async update(req, res) {
-        try {
-            const { id } = req.params;
-            // Capture também a 'senha' do corpo da requisição
-            const { nome, cargo, email, senha } = req.body;
+  // Método para atualizar um funcionário
+  async update(req, res) {
+    try {
+      const { id } = req.params;
+      const { nome, cargo, email, senha } = req.body;
 
-            const funcionario = await Funcionario.findByPk(id);
+      // Usamos .unscoped() para poder editar um usuário sem que o hash seja excluído
+      const funcionario = await Funcionario.unscoped().findByPk(id);
 
-            if (!funcionario) {
-                return res.status(404).json({ error: 'Funcionário não encontrado.' });
-            }
+      if (!funcionario) {
+        return res.status(404).json({ error: 'Funcionário não encontrado.' });
+      }
 
-            // Atualize os campos
-            funcionario.nome = nome;
-            funcionario.cargo = cargo;
-            funcionario.email = email;
+      // --- CORREÇÃO APLICADA ---
+      // Se uma nova senha foi fornecida, a atribuímos ao campo virtual 'senha'.
+      // O hook 'beforeUpdate' do modelo cuidará de gerar o novo hash.
+      if (senha) {
+        funcionario.senha = senha;
+      }
+      
+      // Atualizamos os outros campos
+      funcionario.nome = nome;
+      funcionario.cargo = cargo;
+      funcionario.email = email;
 
-            // Se uma nova senha foi fornecida, atualize-a também
-            if (senha) {
-                funcionario.senha_hash = senha;
-            }
-
-            await funcionario.save();
-            
-            const { senha_hash, ...funcionarioAtualizado } = funcionario.get({ plain: true });
-
-            return res.json(funcionarioAtualizado);
-        }catch (error) {
-            if (error.name === 'SequelizeUniqueConstraintError') {
-                return res.status(400).json({ error: 'Este e-mail já está em uso.' });
-            }
-            return res.status(500).json({ error: 'Erro ao atualizar funcionário.', details: error.message });
-        }
+      await funcionario.save();
+      
+      return res.json({
+        id: funcionario.id,
+        nome: funcionario.nome,
+        email: funcionario.email,
+        cargo: funcionario.cargo
+      });
+    } catch (error) {
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        return res.status(400).json({ error: 'Este e-mail já está em uso.' });
+      }
+      return res.status(500).json({ error: 'Erro ao atualizar funcionário.', details: error.message });
     }
+  }
 
-    // Método para excluir um funcionário
-    async delete(req, res) {
-        try {
-            const { id } = req.params;
-            const funcionario = await Funcionario.findByPk(id);
+  // Método para excluir um funcionário
+  async delete(req, res) {
+    try {
+      const { id } = req.params;
+      const funcionario = await Funcionario.findByPk(id);
 
-            if (!funcionario) {
-                return res.status(404).json({ error: 'Funcionário não encontrado.' });
-            }
+      if (!funcionario) {
+        return res.status(404).json({ error: 'Funcionário não encontrado.' });
+      }
 
-            await funcionario.destroy();
+      await funcionario.destroy();
 
-            return res.status(204).send(); // 204 No Content - sucesso sem corpo de resposta
-        } catch (error) {
-            return res.status(500).json({ error: 'Erro ao excluir funcionário.' });
-        }
+      return res.status(204).send();
+    } catch (error) {
+      return res.status(500).json({ error: 'Erro ao excluir funcionário.', details: error.message });
     }
-    
+  }
 }
 
 module.exports = new FuncionarioController();

@@ -3,6 +3,7 @@ const Venda = require('../models/Venda');
 const VendaItem = require('../models/VendaItem');
 const Produto = require('../models/Produto');
 const Funcionario = require('../models/Funcionario');
+const Caixa = require('../models/Caixa');
 
 class VendaController {
 
@@ -44,11 +45,23 @@ class VendaController {
       const { valor_total, metodo_pagamento, itens } = req.body;
       const funcionario_id = req.userId; // Vem do middleware de autenticação
 
+      // 1. Encontrar o caixa aberto para este funcionário
+      const caixaAberto = await Caixa.findOne({
+        where: { funcionario_id, status: 'ABERTO' },
+        transaction: t
+      });
+
+      if (!caixaAberto) {
+        await t.rollback();
+        return res.status(400).json({ error: 'Nenhum caixa aberto para este funcionário. Inicie uma nova sessão.' });
+      }
+
       // 1. Cria o registro principal da venda
       const novaVenda = await Venda.create({
         funcionario_id,
         valor_total,
         metodo_pagamento,
+        caixa_id: caixaAberto.id, // <-- PASSANDO O ID DO CAIXA
       }, { transaction: t });
 
       // 2. Mapeia os itens do carrinho para o formato do banco de dados

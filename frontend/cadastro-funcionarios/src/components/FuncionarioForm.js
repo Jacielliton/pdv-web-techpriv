@@ -1,6 +1,6 @@
 // src/components/FuncionarioForm.js (VERSÃO COM MUI)
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { TextField, Button, Box, Typography, Grid, Paper, Stack, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { toast } from 'react-toastify';
 
@@ -43,7 +43,7 @@ const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdica
     }
 
     try {
-      const response = await axios[method](url, dataToSend);
+      const response = await api[method](url.replace('http://localhost:3333/api', ''), dataToSend);
       // Use o toast.success
       toast.success(`Funcionário "${response.data.nome}" ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso!`);
       limparFormulario();
@@ -89,7 +89,7 @@ const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdica
                 onChange={handleChange}
               >
                 <MenuItem value="gerente">Gerente</MenuItem>
-                <MenuItem value="gerente">Supervisor</MenuItem>
+                <MenuItem value="supervisor">Supervisor</MenuItem>
                 <MenuItem value="caixa">Caixa</MenuItem>
                 {/* Adicione outros cargos aqui se desejar */}
               </Select>

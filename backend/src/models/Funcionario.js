@@ -1,9 +1,13 @@
-// pdv-web-techpriv\backend\src\models\Funcionario.js
-const { DataTypes, Model } = require('sequelize');
+const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const bcrypt = require('bcryptjs');
 
-class Funcionario extends Model {}
+class Funcionario extends Model {
+  checkPassword(senha) {
+    if (!senha || !this.senha_hash) return false;
+    return bcrypt.compare(senha, this.senha_hash);
+  }
+}
 
 Funcionario.init({
   id: {
@@ -15,18 +19,24 @@ Funcionario.init({
     type: DataTypes.STRING,
     allowNull: false,
   },
-  cargo: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
   },
-  // O campo no banco é 'senha_hash', mas no modelo podemos chamar de 'senha'
-  // e o hook cuidará da transformação.
+  senha: {
+    type: DataTypes.VIRTUAL,
+    validate: {
+      notEmpty: {
+        msg: 'O campo senha não pode ser vazio.'
+      }
+    }
+  },
   senha_hash: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  cargo: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -34,25 +44,22 @@ Funcionario.init({
   sequelize,
   modelName: 'Funcionario',
   tableName: 'funcionarios',
-  timestamps: false, // Desabilitar createdAt e updatedAt automáticos
+  timestamps: false,
   hooks: {
-    // Hook para gerar o hash da senha antes de criar o funcionário
     beforeCreate: async (funcionario) => {
-      if (funcionario.senha_hash) {
-        const salt = await bcrypt.genSalt(10);
-        funcionario.senha_hash = await bcrypt.hash(funcionario.senha_hash, salt);
+      if (funcionario.senha) {
+        funcionario.senha_hash = await bcrypt.hash(funcionario.senha, 8);
       }
     },
-    // ADICIONE ESTE NOVO HOOK
     beforeUpdate: async (funcionario) => {
-      // Verifica se o campo senha_hash foi modificado
-      if (funcionario.changed('senha_hash')) {
-        const salt = await bcrypt.genSalt(10);
-        funcionario.senha_hash = await bcrypt.hash(funcionario.senha_hash, salt);
+      if (funcionario.senha) {
+        funcionario.senha_hash = await bcrypt.hash(funcionario.senha, 8);
       }
     }
   },
-  
+  defaultScope: {
+    attributes: { exclude: ['senha_hash'] },
+  },
 });
 
 module.exports = Funcionario;
