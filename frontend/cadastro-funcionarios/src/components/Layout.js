@@ -72,6 +72,12 @@ const Layout = () => {
               </ListItem>
 
               <ListItem disablePadding>
+                <ListItemButton component={Link} to="/relatorios">
+                  <ListItemText primary="Relatórios" />
+                </ListItemButton>
+              </ListItem>
+
+              <ListItem disablePadding>
                 <ListItemButton component={Link} to="/">
                   <ListItemText primary="Dashboard" />
                 </ListItemButton>

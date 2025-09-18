@@ -11,6 +11,7 @@ import FrenteDeCaixa from '../pages/FrenteDeCaixa';
 import HistoricoVendas from '../pages/HistoricoVendas';
 import Layout from '../components/Layout';
 import HistoricoCaixas from '../pages/HistoricoCaixas';
+import Relatorios from '../pages/Relatorios';
 import FechamentoCaixa from '../pages/FechamentoCaixa'; 
 
 const Routes = () => {
@@ -42,6 +43,7 @@ const Routes = () => {
               <Route path="/produtos" element={<Produtos />} />
               <Route path="/historico" element={<HistoricoVendas />} />
               <Route path="/historico-caixas" element={<HistoricoCaixas />} />
+              <Route path="/relatorios" element={<Relatorios />} />
             </>
           )}
 

@@ -9,6 +9,8 @@ const VendaController = require('../controllers/VendaController');
 const DashboardController = require('../controllers/DashboardController');
 const PagSeguroController = require('../controllers/PagSeguroController'); 
 const CaixaController = require('../controllers/CaixaController');
+const RelatorioController = require('../controllers/RelatorioController'); // 1. IMPORTE
+
 // Middlewares
 const authMiddleware = require('../middlewares/auth');
 const authManagerMiddleware = require('../middlewares/authManager');
@@ -57,7 +59,9 @@ routes.get('/dashboard/summary', DashboardController.getSummary);
 routes.get('/dashboard/vendas-semanais', DashboardController.getVendasSemanais);
 
 // A rota de histórico de TODOS os caixas continua aqui, pois é uma função gerencial.
-routes.get('/caixas/historico', CaixaController.getHistorico); 
+routes.get('/caixas/historico', CaixaController.getHistorico);
+routes.get('/relatorios/vendas', RelatorioController.getRelatorioVendas);
+
 
 // Rotas do PagSeguro
 routes.post('/pagamento/pagseguro/order', PagSeguroController.createOrder);
