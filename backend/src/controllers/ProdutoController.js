@@ -3,13 +3,33 @@ const Yup = require('yup');
 const Produto = require('../models/Produto');
 
 class ProdutoController {
-  // Listar todos os produtos
+  // --- MÉTODO INDEX ATUALIZADO ---
   async index(req, res) {
+    const { page } = req.query; // Pega a página, se existir
+
+    // SE a página foi solicitada, retorna os dados paginados
+    if (page) {
+      const limit = 10;
+      const offset = limit * (parseInt(page, 10) - 1);
+      try {
+        const { count, rows: produtos } = await Produto.findAndCountAll({
+          order: [['nome', 'ASC']],
+          limit,
+          offset,
+        });
+        const totalPages = Math.ceil(count / limit);
+        return res.json({ produtos, totalPages, currentPage: parseInt(page, 10) });
+      } catch (error) {
+        return res.status(500).json({ error: 'Erro ao listar produtos paginados.' });
+      }
+    }
+
+    // SE NENHUMA página foi solicitada, retorna TODOS os produtos
     try {
-      const produtos = await Produto.findAll({ order: [['id', 'ASC']] });
-      return res.json(produtos);
+      const produtos = await Produto.findAll({ order: [['nome', 'ASC']] });
+      return res.json(produtos); // Retorna o array diretamente
     } catch (error) {
-      return res.status(500).json({ error: 'Erro ao listar produtos.' });
+      return res.status(500).json({ error: 'Erro ao listar todos os produtos.' });
     }
   }
 

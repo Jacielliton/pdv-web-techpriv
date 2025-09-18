@@ -2,10 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { toast } from 'react-toastify';
-import {
-  Container, Typography, Paper, Box, CircularProgress, Table,
-  TableBody, TableCell, TableContainer, TableHead, TableRow
-} from '@mui/material';
+import { Container, Typography, Paper, Box, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Pagination } from '@mui/material';
 
 const formatCurrency = (value) => `R$ ${Number(value).toFixed(2)}`;
 const formatDate = (date) => new Date(date).toLocaleString('pt-BR');
@@ -13,29 +10,31 @@ const formatDate = (date) => new Date(date).toLocaleString('pt-BR');
 function HistoricoCaixas() {
   const [historico, setHistorico] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    const fetchHistorico = async () => {
+    const fetchHistorico = async (currentPage) => {
+      setLoading(true);
       try {
-        const response = await api.get('/caixas/historico');
-        setHistorico(response.data);
+        const response = await api.get('/caixas/historico', { params: { page: currentPage } });
+        setHistorico(response.data.historico);
+        setTotalPages(response.data.totalPages);
       } catch (error) {
         toast.error('Não foi possível carregar o histórico de caixas.');
-        console.error("Erro ao buscar histórico de caixas:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchHistorico();
-  }, []);
+    fetchHistorico(page);
+  }, [page]);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
+
+  if (loading) return ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box> );
+
 
   return (
     <Container maxWidth="lg">
@@ -76,6 +75,9 @@ function HistoricoCaixas() {
           </TableBody>
         </Table>
       </TableContainer>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" />
+      </Box>
     </Container>
   );
 }

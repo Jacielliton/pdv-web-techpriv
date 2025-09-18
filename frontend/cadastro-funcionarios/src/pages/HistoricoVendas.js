@@ -1,13 +1,9 @@
 // src/pages/HistoricoVendas.js
-
 import React, { useState, useEffect, useRef } from 'react';
-import api from '../services/api'; // ALTERADO: Importa a instância 'api'
-import { useReactToPrint } from 'react-to-print';
+import api from '../services/api';
 import Recibo from '../components/Recibo';
-import {
-  Container, Typography, Accordion, AccordionSummary, AccordionDetails,
-  List, ListItem, ListItemText, Grid, Box, CircularProgress, IconButton
-} from '@mui/material';
+import { useReactToPrint } from 'react-to-print';
+import { Container, Typography, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemText, Grid, Box, CircularProgress, IconButton, Pagination } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PrintIcon from '@mui/icons-material/Print';
 import { toast } from 'react-toastify';
@@ -15,27 +11,33 @@ import { toast } from 'react-toastify';
 function HistoricoVendas() {
   const [vendas, setVendas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [vendaParaImprimir, setVendaParaImprimir] = useState(null);
   const reciboRef = useRef();
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // 1. ADICIONE O ESTADO PARA O ERRO
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    const fetchHistorico = async () => {
+    const fetchHistorico = async (currentPage) => {
       setLoading(true);
+      setError(null); // Limpa erros antigos antes de uma nova busca
       try {
-        // ALTERADO: Usa 'api' e a URL relativa
-        const response = await api.get('/vendas');
-        setVendas(response.data);
+        const response = await api.get('/vendas', { params: { page: currentPage } });
+        setVendas(response.data.vendas);
+        setTotalPages(response.data.totalPages);
       } catch (err) {
-        console.error("Erro ao buscar histórico de vendas:", err);
-        setError("Não foi possível carregar o histórico.");
         toast.error("Não foi possível carregar o histórico.");
+        // 2. ATUALIZE O ESTADO DE ERRO QUANDO A BUSCA FALHAR
+        setError("Ocorreu um erro ao buscar os dados.");
       } finally {
         setLoading(false);
       }
     };
-    fetchHistorico();
-  }, []);
+    fetchHistorico(page);
+  }, [page]);
   
   const handlePrint = useReactToPrint({
     content: () => reciboRef.current,
@@ -53,8 +55,14 @@ function HistoricoVendas() {
   }, [vendaParaImprimir, handlePrint]);
 
 
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
+
   if (loading) return ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box> );
-  if (error) return <Typography color="error">{error}</Typography>;
+  
+  // Agora a variável 'error' existe e esta linha funcionará
+  if (error) return <Typography color="error" sx={{ textAlign: 'center', mt: 4 }}>{error}</Typography>;
 
   return (
     <Container maxWidth="md">
@@ -95,10 +103,10 @@ function HistoricoVendas() {
             </AccordionDetails>
         </Accordion>
       ))}
-
-      <div style={{ display: 'none' }}>
-        <Recibo ref={reciboRef} venda={vendaParaImprimir} />
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" />
+      </Box>
+      <div style={{ display: 'none' }}><Recibo ref={reciboRef} venda={vendaParaImprimir} /></div>
     </Container>
   );
 }

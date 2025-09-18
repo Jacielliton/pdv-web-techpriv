@@ -8,14 +8,21 @@ class FuncionarioController {
   // --- FUNÇÃO FALTANDO ---
   // Método para listar todos os funcionários
   async index(req, res) {
+    const { page = 1 } = req.query;
+    const limit = 10;
+    const offset = limit * (page - 1);
+
     try {
-      const funcionarios = await Funcionario.findAll({
+      const { count, rows: funcionarios } = await Funcionario.findAndCountAll({
         attributes: ['id', 'nome', 'cargo', 'email'],
         order: [['nome', 'ASC']],
+        limit,
+        offset,
       });
-      return res.json(funcionarios);
+
+      const totalPages = Math.ceil(count / limit);
+      return res.json({ funcionarios, totalPages, currentPage: parseInt(page, 10) });
     } catch (error) {
-      console.error('ERRO AO LISTAR FUNCIONÁRIOS:', error);
       return res.status(500).json({ error: 'Erro ao listar funcionários.' });
     }
   }

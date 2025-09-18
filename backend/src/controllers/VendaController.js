@@ -9,28 +9,28 @@ class VendaController {
 
   // Listar todas as vendas com detalhes
   async index(req, res) {
+    const { page = 1 } = req.query;
+    const limit = 10;
+    const offset = limit * (page - 1);
+
     try {
-      const vendas = await Venda.findAll({
-        // Ordena as vendas da mais recente para a mais antiga
+      const { count, rows: vendas } = await Venda.findAndCountAll({
         order: [['data_venda', 'DESC']],
-        // Inclui os dados dos models associados
         include: [
-          {
-            model: Funcionario,
-            attributes: ['nome'], // Pega apenas o nome do funcionário
-          },
+          { model: Funcionario, attributes: ['nome'] },
           {
             model: VendaItem,
-            attributes: ['quantidade', 'preco_unitario'], // Pega a quantidade e o preço
-            include: [{
-              model: Produto,
-              attributes: ['nome'], // Pega o nome do produto de cada item
-            }],
+            attributes: ['quantidade', 'preco_unitario'],
+            include: [{ model: Produto, attributes: ['nome'] }],
           },
         ],
+        limit,
+        offset,
+        distinct: true, // Importante para contagens corretas com 'include'
       });
 
-      return res.json(vendas);
+      const totalPages = Math.ceil(count / limit);
+      return res.json({ vendas, totalPages, currentPage: parseInt(page, 10) });
     } catch (error) {
       return res.status(500).json({ error: 'Erro ao buscar histórico de vendas.', details: error.message });
     }

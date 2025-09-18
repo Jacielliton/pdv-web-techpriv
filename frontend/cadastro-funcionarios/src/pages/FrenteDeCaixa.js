@@ -36,14 +36,28 @@ function FrenteDeCaixa() {
 
 
   // Busca a lista de produtos
-  useEffect(() => {
+   useEffect(() => {
     const fetchProdutos = async () => {
       try {
-        // ALTERADO: Usa a instância 'api' que envia o token
+        // A chamada continua a mesma, sem passar a página
         const response = await api.get('/produtos');
-        setTodosProdutos(response.data);
+        
+        // --- LÓGICA CORRIGIDA ---
+        // Verifica se a resposta é um objeto de paginação (tem a propriedade 'produtos')
+        // Se for, pega o array de dentro. Se não, usa a resposta inteira.
+        const listaDeProdutos = response.data.produtos || response.data;
+
+        // Garante que estamos sempre salvando um array no estado
+        if (Array.isArray(listaDeProdutos)) {
+          setTodosProdutos(listaDeProdutos);
+        } else {
+          console.error("A resposta da API de produtos não é um array:", response.data);
+          setTodosProdutos([]); // Define como array vazio em caso de formato inesperado
+        }
+
       } catch (error) {
         toast.error('Erro ao carregar produtos.');
+        setTodosProdutos([]); // Garante que seja um array em caso de erro
       }
     };
     fetchProdutos();

@@ -1,12 +1,12 @@
 // src/pages/Funcionarios.js
 
 import React, { useState, useEffect } from 'react';
-import api from '../services/api'; // ALTERADO: Importa a instância 'api'
+import api from '../services/api';
 import FuncionarioForm from '../components/FuncionarioForm';
 import ListaFuncionarios from '../components/ListaFuncionarios';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from 'react-toastify';
-import { Container, Typography } from '@mui/material';
+import { Container, Typography, Box, Pagination } from '@mui/material';
 
 function Funcionarios() {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -14,13 +14,15 @@ function Funcionarios() {
   const [funcionarioParaEditar, setFuncionarioParaEditar] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [funcionarioParaDeletar, setFuncionarioParaDeletar] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchFuncionarios = async () => {
+  const fetchFuncionarios = async (currentPage) => {
     setLoading(true);
     try {
-      // ALTERADO: Usa 'api' e a URL relativa
-      const response = await api.get('/funcionarios');
-      setFuncionarios(response.data);
+      const response = await api.get('/funcionarios', { params: { page: currentPage } });
+      setFuncionarios(response.data.funcionarios);
+      setTotalPages(response.data.totalPages);
     } catch (err) {
       toast.error('Falha ao carregar funcionários.');
     } finally {
@@ -29,13 +31,15 @@ function Funcionarios() {
   };
   
   useEffect(() => {
-    fetchFuncionarios();
-  }, []);
+    fetchFuncionarios(page);
+  }, [page]);
 
   const handleSuccess = () => {
     fetchFuncionarios();
     setFuncionarioParaEditar(null);
   };
+
+  const handlePageChange = (event, value) => { setPage(value); };
 
   const handleEdit = (funcionario) => {
     setFuncionarioParaEditar(funcionario);
@@ -80,6 +84,11 @@ function Funcionarios() {
         funcionarios={funcionarios}
         loading={loading}
       />
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" />
+      </Box>
+      
       <ConfirmDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}

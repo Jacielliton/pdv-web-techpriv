@@ -98,14 +98,22 @@ class CaixaController {
   }
 
   async getHistorico(req, res) {
+    const { page = 1 } = req.query;
+    const limit = 10;
+    const offset = limit * (page - 1);
+
     try {
-      const historico = await Caixa.findAll({
-        where: { status: 'FECHADO' }, order: [['data_fechamento', 'DESC']],
+      const { count, rows: historico } = await Caixa.findAndCountAll({
+        where: { status: 'FECHADO' },
+        order: [['data_fechamento', 'DESC']],
         include: [{ model: Funcionario, attributes: ['nome'] }],
+        limit,
+        offset,
       });
-      return res.json(historico);
+      
+      const totalPages = Math.ceil(count / limit);
+      return res.json({ historico, totalPages, currentPage: parseInt(page, 10) });
     } catch (error) {
-      console.error("Erro ao buscar histórico de caixas:", error);
       return res.status(500).json({ error: 'Erro ao buscar histórico de caixas.', details: error.message });
     }
   }
