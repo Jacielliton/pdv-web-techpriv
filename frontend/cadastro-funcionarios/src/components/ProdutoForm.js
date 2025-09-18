@@ -1,7 +1,7 @@
 // src/components/ProdutoForm.js (VERSÃO COM MUI)
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { TextField, Button, Box, Typography, Grid, Paper, Stack } from '@mui/material';
+import { TextField, Button, Box, Typography, Grid, Paper, Stack, CircularProgress } from '@mui/material';
 import { toast } from 'react-toastify';
 
 const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
@@ -13,6 +13,7 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
     codigo_barras: '',
   });  
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (produtoParaEditar) {
@@ -35,12 +36,12 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true); // Ativa o loading
     
     const url = isEditing ? `/produtos/${produtoParaEditar.id}` : '/produtos';
     const method = isEditing ? 'put' : 'post';
 
     try {
-      // ALTERADO: Usa a instância 'api'
       await api[method](url, formData);
       toast.success(`Produto ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso!`);
       limparFormulario();
@@ -48,6 +49,8 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
     } catch (error) {
       const errorMsg = error.response?.data?.details?.[0] || error.response?.data?.error || `Erro ao ${isEditing ? 'atualizar' : 'cadastrar'}.`;
       toast.error(errorMsg);
+    } finally {
+      setIsLoading(false); // Desativa o loading no final, mesmo se der erro
     }
   };
 
@@ -117,15 +120,16 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
           </Grid>
         </Grid>
         <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
-          <Button type="submit" variant="contained">
-            {isEditing ? 'Atualizar' : 'Cadastrar'}
+          {/* 3. ATUALIZAR O BOTÃO */}
+          <Button type="submit" variant="contained" disabled={isLoading}>
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : (isEditing ? 'Atualizar' : 'Cadastrar')}
           </Button>
           {isEditing && (
-            <Button variant="outlined" onClick={limparFormulario}>
+            <Button variant="outlined" onClick={limparFormulario} disabled={isLoading}>
               Cancelar Edição
             </Button>
           )}
-        </Stack>        
+        </Stack>       
       </Box>
     </Paper>
   );

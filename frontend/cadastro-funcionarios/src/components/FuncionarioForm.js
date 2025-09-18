@@ -1,7 +1,7 @@
 // src/components/FuncionarioForm.js (VERSÃO COM MUI)
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { TextField, Button, Box, Typography, Grid, Paper, Stack, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { TextField, Button, Box, Typography, Grid, Paper, Stack, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material';
 import { toast } from 'react-toastify';
 
 const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdicao }) => {
@@ -10,6 +10,7 @@ const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdica
   });
   
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (funcionarioParaEditar) {
@@ -31,10 +32,9 @@ const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdica
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true); // Ativa o loading
     
-    const url = isEditing
-      ? `http://localhost:3333/api/funcionarios/${funcionarioParaEditar.id}`
-      : 'http://localhost:3333/api/funcionarios';
+    const url = isEditing ? `/funcionarios/${funcionarioParaEditar.id}` : '/funcionarios';
     const method = isEditing ? 'put' : 'post';
     
     const dataToSend = { ...formData };
@@ -43,15 +43,15 @@ const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdica
     }
 
     try {
-      const response = await api[method](url.replace('http://localhost:3333/api', ''), dataToSend);
-      // Use o toast.success
+      const response = await api[method](url, dataToSend);
       toast.success(`Funcionário "${response.data.nome}" ${isEditing ? 'atualizado' : 'cadastrado'} com sucesso!`);
       limparFormulario();
       if (onCadastroSucesso) onCadastroSucesso();
     } catch (error) {
       const errorMsg = error.response?.data?.error || `Erro ao ${isEditing ? 'atualizar' : 'cadastrar'}.`;
-      // Use o toast.error
       toast.error(errorMsg);
+    } finally {
+      setIsLoading(false); // Desativa o loading no final, mesmo se der erro
     }
   };
 
@@ -118,12 +118,12 @@ const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdica
             />
           </Grid>
         </Grid>
-        <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
-          <Button type="submit" variant="contained">
-            {isEditing ? 'Atualizar' : 'Cadastrar'}
+        <Stack direction="row" spacing={2} sx={{ mt: 3 }}>          
+          <Button type="submit" variant="contained" disabled={isLoading}>
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : (isEditing ? 'Atualizar' : 'Cadastrar')}
           </Button>
           {isEditing && (
-            <Button variant="outlined" onClick={limparFormulario}>
+            <Button variant="outlined" onClick={limparFormulario} disabled={isLoading}>
               Cancelar Edição
             </Button>
           )}
