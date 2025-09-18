@@ -8,7 +8,7 @@ const AuthContext = createContext({});
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  // Estados para gerenciar o caixa
+  // --- Estados que estavam faltando para gerenciar o caixa ---
   const [caixaStatus, setCaixaStatus] = useState('FECHADO');
   const [loadingCaixa, setLoadingCaixa] = useState(true);
 
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
 
-    loadStorageData(); // Corrigido o typo de "loadStoragedata"
+    loadStorageData();
 
     // Limpa o interceptor ao desmontar
     return () => api.interceptors.response.eject(interceptor);
@@ -106,6 +106,7 @@ export const AuthProvider = ({ children }) => {
         loading, 
         signIn, 
         signOut,
+        // --- Informações do caixa que estavam faltando ---
         caixaStatus,
         loadingCaixa,
         abrirCaixa,

@@ -3,14 +3,11 @@ import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-// Importando componentes do MUI que usaremos
-import { Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider } from '@mui/material';
-// Adicionei o Button do MUI que estava faltando
-import { Button } from '@mui/material';
+import { Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button } from '@mui/material';
 
 const Layout = () => {
-  // 1. Puxe o 'isManager' do nosso hook
-  const { signOut, user, isManager } = useAuth();
+  // 1. ALTERAÇÃO: Pegamos o 'caixaStatus' do nosso hook de autenticação
+  const { signOut, user, isManager, caixaStatus } = useAuth();
 
   const navStyle = { width: '240px', background: '#f4f4f4', height: '100vh', display: 'flex', flexDirection: 'column' };
   const contentStyle = { flex: 1, padding: '20px', overflowY: 'auto', background: '#fff' };
@@ -23,14 +20,21 @@ const Layout = () => {
         </Box>
         <Divider />
         <List>
-          {/* O link de Frente de Caixa aparece para todos */}
           <ListItem disablePadding>
             <ListItemButton component={Link} to="/venda">
               <ListItemText primary="Frente de Caixa" />
             </ListItemButton>
           </ListItem>
+
+          {/* 2. ALTERAÇÃO: Adicionamos o link 'Fechar Caixa' que só aparece se o caixa estiver ABERTO */}
+          {caixaStatus === 'ABERTO' && (
+            <ListItem disablePadding>
+              <ListItemButton component={Link} to="/fechamento-caixa" sx={{ backgroundColor: 'rgba(25, 118, 210, 0.1)' }}>
+                <ListItemText primary="Fechar Caixa" sx={{ color: 'primary.main', fontWeight: 'bold' }} />
+              </ListItemButton>
+            </ListItem>
+          )}
           
-          {/* 2. Envolva os links de gerente em uma condição */}
           {isManager && (
             <>
               <ListItem disablePadding>
@@ -78,7 +82,7 @@ const Layout = () => {
 
       <ToastContainer
         position="top-right"
-        autoClose={5000}
+        autoClose={3000}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick
@@ -90,7 +94,5 @@ const Layout = () => {
     </Box>
   );
 };
-
-
 
 export default Layout;

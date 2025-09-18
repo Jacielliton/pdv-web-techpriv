@@ -1,6 +1,5 @@
-// backend/src/routes/index.js (VERSÃO FINAL)
+// backend/src/routes/index.js (VERSÃO CORRIGIDA)
 const { Router } = require('express');
-const sequelize = require('../config/database');
 
 // Controllers
 const FuncionarioController = require('../controllers/FuncionarioController');
@@ -28,12 +27,18 @@ routes.post('/login', SessionController.store);
 routes.use(authMiddleware);
 // ===================================================================
 
-// --- Rotas para TODOS os funcionários logados (Caixas, Gerentes, etc.) ---
-routes.get('/produtos', ProdutoController.index); // Listar produtos está acessível a todos
+// --- Rotas para TODOS os funcionários logados (Caixas e Gerentes) ---
+routes.get('/produtos', ProdutoController.index);
 routes.post('/vendas', VendaController.store);
+
+// --- ROTAS DE CAIXA MOVIDAS PARA CIMA ---
+// Estas são as operações que um 'caixa' precisa fazer.
 routes.get('/caixa/status', CaixaController.getStatus);
 routes.post('/caixa/abrir', CaixaController.abrirCaixa);
 routes.post('/caixa/movimentacao', CaixaController.registrarMovimentacao);
+routes.get('/caixa/resumo', CaixaController.getResumo);
+routes.post('/caixa/fechar', CaixaController.fecharCaixa);
+// ------------------------------------
 
 // ===================================================================
 // --- APLICA O MIDDLEWARE DE AUTORIZAÇÃO DE GERENTE ---
@@ -54,11 +59,11 @@ routes.delete('/produtos/:id', ProdutoController.delete);
 routes.get('/vendas', VendaController.index);
 routes.get('/dashboard/summary', DashboardController.getSummary);
 routes.get('/dashboard/vendas-semanais', DashboardController.getVendasSemanais);
-routes.get('/caixas/historico', CaixaController.getHistorico);
-routes.get('/caixa/resumo', CaixaController.getResumo);
-routes.post('/caixa/fechar', CaixaController.fecharCaixa);
 
-// Rota do PagSeguro (exclusiva para gerentes, por exemplo)
+// A rota de histórico de TODOS os caixas continua aqui, pois é uma função gerencial.
+routes.get('/caixas/historico', CaixaController.getHistorico); 
+
+// Rotas do PagSeguro
 routes.post('/pagamento/pagseguro/order', PagSeguroController.createOrder);
 routes.get('/pagamento/pagseguro/devices', PagSeguroController.listDevices);
 
