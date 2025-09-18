@@ -1,4 +1,4 @@
-// frontend/cadastro-funcionarios/src/components/Layout.js (VERSÃO CORRIGIDA)
+// frontend/cadastro-funcionarios/src/components/Layout.js (VERSÃO FINAL E CORRIGIDA)
 import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -27,7 +27,7 @@ const Layout = () => {
             </ListItemButton>
           </ListItem>
 
-          {/* 2. ALTERAÇÃO: Adicionamos o link 'Fechar Caixa' que só aparece se o caixa estiver ABERTO */}
+          {/* 2. LÓGICA CORRIGIDA: O link 'Fechar Caixa' aparece para TODOS se o caixa estiver ABERTO */}
           {caixaStatus === 'ABERTO' && (
             <ListItem disablePadding>
               <ListItemButton component={Link} to="/fechamento-caixa" sx={{ backgroundColor: 'rgba(25, 118, 210, 0.1)' }}>
@@ -84,13 +84,6 @@ const Layout = () => {
       <ToastContainer
         position="top-right"
         autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
       />
     </Box>
   );
