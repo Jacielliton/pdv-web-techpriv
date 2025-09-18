@@ -53,6 +53,7 @@ routes.delete('/produtos/:id', ProdutoController.delete);
 
 routes.get('/vendas', VendaController.index);
 routes.get('/dashboard/summary', DashboardController.getSummary);
+routes.get('/dashboard/vendas-semanais', DashboardController.getVendasSemanais);
 routes.get('/caixa/resumo', CaixaController.getResumo);
 routes.post('/caixa/fechar', CaixaController.fecharCaixa);
 

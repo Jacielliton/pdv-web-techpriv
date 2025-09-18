@@ -1,4 +1,4 @@
-// pdv-web-techpriv\backend\src\models\Produto.js
+// backend/src/models/Produto.js (VERSÃO CORRIGIDA E FINAL)
 const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../config/database');
 
@@ -18,7 +18,7 @@ Produto.init({
     type: DataTypes.TEXT,
   },
   preco: {
-    type: DataTypes.DECIMAL(10, 2), // Usamos DECIMAL para precisão monetária
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
   quantidade_estoque: {
@@ -30,12 +30,14 @@ Produto.init({
     type: DataTypes.STRING,
     unique: true,
   },
-  // O campo data_cadastro é gerenciado pelo banco de dados, então não precisamos dele aqui
 }, {
   sequelize,
   modelName: 'Produto',
-  tableName: 'produtos',
-  timestamps: false, // Desabilitamos os campos createdAt e updatedAt automáticos
+  // --- LINHA ADICIONADA ---
+  // Garante que o nome da tabela seja sempre 'produtos' em minúsculo
+  tableName: 'produtos', 
+  // -------------------------
+  timestamps: false,
 });
 
 module.exports = Produto;

@@ -5,7 +5,8 @@ import api from '../services/api'; // ALTERADO: Importa a instância 'api'
 import { toast } from 'react-toastify';
 
 // Importando componentes MUI para um visual mais limpo
-import { Container, Typography, Grid, Paper, CircularProgress, List, ListItem, ListItemText } from '@mui/material';
+import { Container, Typography, Grid, Paper, CircularProgress, List, ListItem, ListItemText, Box } from '@mui/material';
+import GraficoVendas from '../components/GraficoVendas';
 
 function Dashboard() {
   const [summary, setSummary] = useState({
@@ -13,22 +14,29 @@ function Dashboard() {
     numeroDeVendasHoje: 0,
     topProdutos: [],
   });
+  const [vendasSemanais, setVendasSemanais] = useState([]);
   const [loading, setLoading] = useState(true);
+  
 
   useEffect(() => {
-    const fetchSummary = async () => {
+    const fetchData = async () => {
       try {
-        // ALTERADO: Usa 'api' e a URL relativa
-        const response = await api.get('/dashboard/summary');
-        setSummary(response.data);
+        // Usamos Promise.all para buscar os dois dados em paralelo
+        const [summaryResponse, vendasSemanaisResponse] = await Promise.all([
+          api.get('/dashboard/summary'),
+          api.get('/dashboard/vendas-semanais') // <-- Busca os dados do gráfico
+        ]);
+        
+        setSummary(summaryResponse.data);
+        setVendasSemanais(vendasSemanaisResponse.data); // <-- Salva os dados do gráfico
       } catch (err) {
-        console.error("Erro ao buscar resumo do dashboard:", err);
+        console.error("Erro ao buscar dados do dashboard:", err);
         toast.error("Não foi possível carregar os dados do dashboard.");
       } finally {
         setLoading(false);
       }
     };
-    fetchSummary();
+    fetchData();
   }, []);
 
   if (loading) return <CircularProgress />;
@@ -37,7 +45,7 @@ function Dashboard() {
     <Container maxWidth="lg">
       <Typography variant="h4" component="h1" gutterBottom>
         Dashboard Gerencial
-      </Typography>
+      </Typography>      
 
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6}>
@@ -82,6 +90,17 @@ function Dashboard() {
 
         )}
       </Paper>
+
+      {/* 3. ADICIONE O GRÁFICO À TELA */}
+      <Paper elevation={3} sx={{ p: 2, mb: 4 }}>
+        <Typography variant="h5" component="h3" gutterBottom>
+          Vendas nos Últimos 7 Dias
+        </Typography>
+        <Box sx={{ width: '100%', height: 300 }}>
+          <GraficoVendas data={vendasSemanais} />
+        </Box>
+      </Paper>
+
     </Container>
   );
 }
