@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 
 function FechamentoCaixa() {
-  // 1. Pegamos também 'isManager' e 'signOut' do contexto
+  // 1. Pegamos 'isManager' e 'signOut' do contexto para o redirecionamento
   const { atualizarCaixaStatus, isManager, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -56,22 +56,20 @@ function FechamentoCaixa() {
       await atualizarCaixaStatus();
 
       // 2. LÓGICA DE REDIRECIONAMENTO CORRIGIDA
-      // Adiciona um pequeno delay para o usuário ver a mensagem de sucesso
       setTimeout(() => {
         if (isManager) {
-          // Se for gerente, vai para a página de histórico de caixas
+          // Se for gerente, vai para a página de histórico
           navigate('/historico-caixas');
         } else {
           // Se for caixa, encerra a sessão e volta para a tela de login
           signOut();
         }
-      }, 1500); // Atraso de 1.5 segundos
+      }, 1500); // Atraso de 1.5s para o usuário ler o toast
 
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível fechar o caixa.');
-      setIsClosing(false); // Libera o botão em caso de erro
+      setIsClosing(false); // Libera o botão apenas em caso de erro
     }
-    // Não colocamos setIsClosing(false) no finally para evitar que o botão reative antes do redirecionamento
   };
 
   if (loading) {

@@ -1,6 +1,5 @@
-// pdv-web-techpriv\frontend\cadastro-funcionarios\src\routes\index.js
+// pdv-web-techpriv\frontend\cadastro-funcionarios\src\routes\index.js (VERSÃO CORRIGIDA)
 import React from 'react';
-// Importe também o Navigate para fazer o redirecionamento
 import { BrowserRouter, Routes as Switch, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 
@@ -15,7 +14,6 @@ import HistoricoCaixas from '../pages/HistoricoCaixas';
 import FechamentoCaixa from '../pages/FechamentoCaixa'; 
 
 const Routes = () => {
-  // Puxe também o isManager do hook
   const { signed, loading, isManager } = useAuth();
 
   if (loading) {
@@ -32,28 +30,27 @@ const Routes = () => {
     );
   }
 
-  // Se estiver logado, usa a estrutura de rotas aninhadas com o Layout
   return (
     <BrowserRouter>
       <Switch>
         <Route element={<Layout />}>
-          {/* Rotas para Gerente */}
-          {isManager ? (
+          {/* --- Rotas Exclusivas para Gerente --- */}
+          {isManager && (
             <>
               <Route path="/" element={<Dashboard />} />
               <Route path="/funcionarios" element={<Funcionarios />} />
               <Route path="/produtos" element={<Produtos />} />
               <Route path="/historico" element={<HistoricoVendas />} />
-              <Route path="/fechamento-caixa" element={<FechamentoCaixa />} />
               <Route path="/historico-caixas" element={<HistoricoCaixas />} />
             </>
-          ) : (
-            // Se não for gerente, qualquer tentativa de acessar a raiz "/" será redirecionada
-            <Route path="/" element={<Navigate to="/venda" replace />} />
           )}
 
-          {/* Rota comum para todos os logados */}
+          {/* --- Rotas Comuns para TODOS os funcionários logados --- */}
           <Route path="/venda" element={<FrenteDeCaixa />} />
+          
+          {/* --- ROTA CORRIGIDA --- */}
+          {/* Fechamento de Caixa agora é acessível a todos os usuários logados */}
+          <Route path="/fechamento-caixa" element={<FechamentoCaixa />} />
           
           {/* Rota "catch-all" para redirecionar qualquer outra URL inválida */}
           <Route path="*" element={<Navigate to={isManager ? "/" : "/venda"} replace />} />
