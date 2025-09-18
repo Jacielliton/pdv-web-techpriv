@@ -1,3 +1,4 @@
+// frontend/cadastro-funcionarios/src/components/Layout.js (VERSÃO CORRIGIDA)
 import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -6,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { Box, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button } from '@mui/material';
 
 const Layout = () => {
-  // 1. ALTERAÇÃO: Pegamos o 'caixaStatus' do nosso hook de autenticação
+  // 1. Pegamos o 'caixaStatus' do nosso hook
   const { signOut, user, isManager, caixaStatus } = useAuth();
 
   const navStyle = { width: '240px', background: '#f4f4f4', height: '100vh', display: 'flex', flexDirection: 'column' };

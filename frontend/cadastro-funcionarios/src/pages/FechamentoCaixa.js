@@ -10,7 +10,8 @@ import {
 } from '@mui/material';
 
 function FechamentoCaixa() {
-  const { atualizarCaixaStatus } = useAuth(); // Usado para avisar o app que o caixa fechou
+  // 1. Pegamos também 'isManager' e 'signOut' do contexto
+  const { atualizarCaixaStatus, isManager, signOut } = useAuth();
   const navigate = useNavigate();
 
   const [resumo, setResumo] = useState(null);
@@ -25,7 +26,7 @@ function FechamentoCaixa() {
         setResumo(response.data);
       } catch (error) {
         toast.error('Você não tem um caixa aberto para fechar.');
-        navigate('/'); // Redireciona para o dashboard se não houver caixa aberto
+        navigate('/');
       } finally {
         setLoading(false);
       }
@@ -33,16 +34,12 @@ function FechamentoCaixa() {
     fetchResumo();
   }, [navigate]);
 
-  // Calcula o total esperado em dinheiro e a diferença em tempo real
   const { totalEsperadoDinheiro, diferenca } = useMemo(() => {
     if (!resumo) return { totalEsperadoDinheiro: 0, diferenca: 0 };
-
     const totalDinheiroVendas = resumo.totaisPorPagamento.Dinheiro || 0;
     const valorEsperado = resumo.valor_inicial + totalDinheiroVendas + resumo.totalSuprimentos - resumo.totalSangrias;
-    
     const valorContado = parseFloat(valorInformado) || 0;
     const diff = valorContado - valorEsperado;
-    
     return { totalEsperadoDinheiro: valorEsperado, diferenca: diff };
   }, [resumo, valorInformado]);
 
@@ -55,14 +52,26 @@ function FechamentoCaixa() {
     setIsClosing(true);
     try {
       await api.post('/caixa/fechar', { valor_final_informado: parseFloat(valorInformado) });
-      toast.success('Caixa fechado com sucesso!');
-      await atualizarCaixaStatus(); // Atualiza o status global do caixa
-      navigate('/historico-caixas'); // Redireciona para o histórico de caixas
+      toast.success('Caixa fechado com sucesso! Finalizando sessão...');
+      await atualizarCaixaStatus();
+
+      // 2. LÓGICA DE REDIRECIONAMENTO CORRIGIDA
+      // Adiciona um pequeno delay para o usuário ver a mensagem de sucesso
+      setTimeout(() => {
+        if (isManager) {
+          // Se for gerente, vai para a página de histórico de caixas
+          navigate('/historico-caixas');
+        } else {
+          // Se for caixa, encerra a sessão e volta para a tela de login
+          signOut();
+        }
+      }, 1500); // Atraso de 1.5 segundos
+
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível fechar o caixa.');
-    } finally {
-      setIsClosing(false);
+      setIsClosing(false); // Libera o botão em caso de erro
     }
+    // Não colocamos setIsClosing(false) no finally para evitar que o botão reative antes do redirecionamento
   };
 
   if (loading) {

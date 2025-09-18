@@ -22,8 +22,7 @@ routes.get('/status', (req, res) => res.json({ status: 'OK' }));
 routes.post('/login', SessionController.store);
 
 // ===================================================================
-// --- APLICA O MIDDLEWARE DE AUTENTICAÇÃO ---
-// TODAS as rotas abaixo desta linha exigem um token JWT válido.
+// APLICA O MIDDLEWARE DE AUTENTICAÇÃO
 routes.use(authMiddleware);
 // ===================================================================
 
@@ -31,18 +30,15 @@ routes.use(authMiddleware);
 routes.get('/produtos', ProdutoController.index);
 routes.post('/vendas', VendaController.store);
 
-// --- ROTAS DE CAIXA MOVIDAS PARA CIMA ---
-// Estas são as operações que um 'caixa' precisa fazer.
+// --- ROTAS DE CAIXA MOVIDAS PARA A SEÇÃO CORRETA ---
 routes.get('/caixa/status', CaixaController.getStatus);
 routes.post('/caixa/abrir', CaixaController.abrirCaixa);
 routes.post('/caixa/movimentacao', CaixaController.registrarMovimentacao);
 routes.get('/caixa/resumo', CaixaController.getResumo);
-routes.post('/caixa/fechar', CaixaController.fecharCaixa);
-// ------------------------------------
+routes.post('/caixa/fechar', CaixaController.fecharCaixa); // <--- MOVIDO PARA CIMA
 
 // ===================================================================
-// --- APLICA O MIDDLEWARE DE AUTORIZAÇÃO DE GERENTE ---
-// TODAS as rotas abaixo desta linha exigem que o usuário seja 'gerente'.
+// APLICA O MIDDLEWARE DE AUTORIZAÇÃO DE GERENTE
 routes.use(authManagerMiddleware);
 // ===================================================================
 
