@@ -38,6 +38,13 @@ const Layout = () => {
                   <ListItemText primary="Histórico de Vendas" />
                 </ListItemButton>
               </ListItem>
+              
+               <ListItem disablePadding>
+                <ListItemButton component={Link} to="/historico-caixas">
+                  <ListItemText primary="Histórico de Caixas" />
+                </ListItemButton>
+              </ListItem>
+
               <ListItem disablePadding>
                 <ListItemButton component={Link} to="/">
                   <ListItemText primary="Dashboard" />

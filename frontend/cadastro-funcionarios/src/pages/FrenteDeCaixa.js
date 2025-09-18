@@ -15,6 +15,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
+
 function FrenteDeCaixa() {
   const { user, isManager, caixaStatus, loadingCaixa } = useAuth();
   const [todosProdutos, setTodosProdutos] = useState([]);

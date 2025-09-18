@@ -11,6 +11,8 @@ import Produtos from '../pages/Produtos';
 import FrenteDeCaixa from '../pages/FrenteDeCaixa';
 import HistoricoVendas from '../pages/HistoricoVendas';
 import Layout from '../components/Layout';
+import HistoricoCaixas from '../pages/HistoricoCaixas';
+import FechamentoCaixa from '../pages/FechamentoCaixa'; 
 
 const Routes = () => {
   // Puxe também o isManager do hook
@@ -42,6 +44,8 @@ const Routes = () => {
               <Route path="/funcionarios" element={<Funcionarios />} />
               <Route path="/produtos" element={<Produtos />} />
               <Route path="/historico" element={<HistoricoVendas />} />
+              <Route path="/fechamento-caixa" element={<FechamentoCaixa />} />
+              <Route path="/historico-caixas" element={<HistoricoCaixas />} />
             </>
           ) : (
             // Se não for gerente, qualquer tentativa de acessar a raiz "/" será redirecionada

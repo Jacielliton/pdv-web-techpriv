@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const Caixa = require('../models/Caixa');
+const Funcionario = require('../models/Funcionario');
 const Venda = require('../models/Venda');
 const MovimentacaoCaixa = require('../models/MovimentacaoCaixa');
 
@@ -57,40 +58,30 @@ class CaixaController {
   // --- GERA O RESUMO DO CAIXA ABERTO ATUAL ---
   async getResumo(req, res) {
     try {
-      const caixaAberto = await Caixa.findOne({
-        where: { funcionario_id: req.userId, status: 'ABERTO' },
-      });
-
+      const caixaAberto = await Caixa.findOne({ where: { funcionario_id: req.userId, status: 'ABERTO' } });
       if (!caixaAberto) {
-        return res.status(404).json({ error: 'Nenhum caixa aberto encontrado para este funcionário.' });
+        return res.status(404).json({ error: 'Nenhum caixa aberto encontrado.' });
       }
-
       const vendas = await Venda.findAll({
         where: { caixa_id: caixaAberto.id },
-        attributes: [
-          'metodo_pagamento',
-          [sequelize.fn('SUM', sequelize.col('valor_total')), 'total'],
-        ],
-        group: ['metodo_pagamento'],
-        raw: true,
+        attributes: ['metodo_pagamento', [sequelize.fn('SUM', sequelize.col('valor_total')), 'total']],
+        group: ['metodo_pagamento'], raw: true,
       });
-
+      const movimentacoes = await MovimentacaoCaixa.findAll({
+        where: { caixa_id: caixaAberto.id },
+        attributes: ['tipo', [sequelize.fn('SUM', sequelize.col('valor')), 'total']],
+        group: ['tipo'], raw: true,
+      });
       const resumo = {
-        caixa_id: caixaAberto.id,
-        data_abertura: caixaAberto.data_abertura,
-        valor_inicial: parseFloat(caixaAberto.valor_inicial),
-        totaisPorPagamento: {},
+        caixa_id: caixaAberto.id, data_abertura: caixaAberto.data_abertura,
+        valor_inicial: parseFloat(caixaAberto.valor_inicial), totaisPorPagamento: {},
+        totalSangrias: 0, totalSuprimentos: 0,
       };
-
-      let totalVendas = 0;
-      vendas.forEach(venda => {
-        resumo.totaisPorPagamento[venda.metodo_pagamento] = parseFloat(venda.total);
-        totalVendas += parseFloat(venda.total);
+      vendas.forEach(venda => { resumo.totaisPorPagamento[venda.metodo_pagamento] = parseFloat(venda.total); });
+      movimentacoes.forEach(mov => {
+        if (mov.tipo === 'SANGRIA') resumo.totalSangrias = parseFloat(mov.total);
+        if (mov.tipo === 'SUPRIMENTO') resumo.totalSuprimentos = parseFloat(mov.total);
       });
-      
-      resumo.totalVendas = totalVendas;
-      resumo.totalCalculado = resumo.valor_inicial + totalVendas;
-
       return res.json(resumo);
     } catch (error) {
       return res.status(500).json({ error: 'Erro ao gerar resumo do caixa.', details: error.message });
@@ -100,40 +91,30 @@ class CaixaController {
   // --- FECHA O CAIXA ABERTO ATUAL ---
   async fecharCaixa(req, res) {
     const { valor_final_informado } = req.body;
-
     if (valor_final_informado === undefined || isNaN(parseFloat(valor_final_informado))) {
       return res.status(400).json({ error: 'Valor final informado é obrigatório.' });
     }
-
+    const t = await sequelize.transaction();
     try {
-      const caixaAberto = await Caixa.findOne({
-        where: { funcionario_id: req.userId, status: 'ABERTO' },
-      });
-
+      const caixaAberto = await Caixa.findOne({ where: { funcionario_id: req.userId, status: 'ABERTO' }, transaction: t });
       if (!caixaAberto) {
+        await t.rollback();
         return res.status(404).json({ error: 'Nenhum caixa aberto para fechar.' });
       }
-
-      // Calcula o total de vendas para este caixa
-      const totalVendas = await Venda.sum('valor_total', {
-        where: { caixa_id: caixaAberto.id }
-      });
-
-      const valorCalculado = parseFloat(caixaAberto.valor_inicial) + (totalVendas || 0);
+      const totalVendasDinheiro = await Venda.sum('valor_total', { where: { caixa_id: caixaAberto.id, metodo_pagamento: 'Dinheiro' }, transaction: t }) || 0;
+      const totalSuprimentos = await MovimentacaoCaixa.sum('valor', { where: { caixa_id: caixaAberto.id, tipo: 'SUPRIMENTO' }, transaction: t }) || 0;
+      const totalSangrias = await MovimentacaoCaixa.sum('valor', { where: { caixa_id: caixaAberto.id, tipo: 'SANGRIA' }, transaction: t }) || 0;
+      const valorCalculado = (parseFloat(caixaAberto.valor_inicial) + totalVendasDinheiro + totalSuprimentos) - totalSangrias;
       const valorInformado = parseFloat(valor_final_informado);
       const diferenca = valorInformado - valorCalculado;
-
-      // Atualiza o registro do caixa no banco
       const caixaFechado = await caixaAberto.update({
-        data_fechamento: new Date(),
-        valor_final_calculado: valorCalculado,
-        valor_final_informado: valorInformado,
-        diferenca: diferenca,
-        status: 'FECHADO',
-      });
-
+        data_fechamento: new Date(), valor_final_calculado: valorCalculado,
+        valor_final_informado: valorInformado, diferenca: diferenca, status: 'FECHADO',
+      }, { transaction: t });
+      await t.commit();
       return res.json(caixaFechado);
     } catch (error) {
+      await t.rollback();
       return res.status(500).json({ error: 'Erro ao fechar o caixa.', details: error.message });
     }
   }
@@ -261,6 +242,28 @@ class CaixaController {
     } catch (error) {
       await t.rollback(); // Desfaz a transação em caso de erro
       return res.status(500).json({ error: 'Erro ao fechar o caixa.', details: error.message });
+    }
+  }
+  // --- ADICIONE ESTE NOVO MÉTODO COMPLETO ---
+  async getHistorico(req, res) {
+    try {
+      const historico = await Caixa.findAll({
+        where: {
+          status: 'FECHADO',
+        },
+        // Ordena os resultados pelo mais recente primeiro
+        order: [['data_fechamento', 'DESC']],
+        // Inclui o nome do funcionário que operou o caixa
+        include: [{
+          model: Funcionario,
+          attributes: ['nome'], // Puxa apenas o atributo 'nome'
+        }],
+      });
+
+      return res.json(historico);
+    } catch (error) {
+      console.error("Erro ao buscar histórico de caixas:", error);
+      return res.status(500).json({ error: 'Erro ao buscar histórico de caixas.', details: error.message });
     }
   }
 }

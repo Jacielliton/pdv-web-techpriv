@@ -1,4 +1,3 @@
-// frontend/cadastro-funcionarios/src/components/ModalMovimentacaoCaixa.js
 import React, { useState } from 'react';
 import api from '../services/api';
 import { toast } from 'react-toastify';
@@ -50,7 +49,7 @@ const ModalMovimentacaoCaixa = ({ open, onClose, tipo }) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} PaperProps={{ sx: { p: 2 } }}>
+    <Dialog open={open} onClose={handleClose} PaperProps={{ sx: { p: 2 } }} fullWidth maxWidth="xs">
       <DialogTitle>
         <Typography variant="h5" component="p" textAlign="center">
           {title}
@@ -80,7 +79,7 @@ const ModalMovimentacaoCaixa = ({ open, onClose, tipo }) => {
           onChange={(e) => setObservacao(e.target.value)}
         />
       </DialogContent>
-      <DialogActions sx={{ justifyContent: 'center', p: 2 }}>
+      <DialogActions sx={{ justifyContent: 'center', p: 2, pt: 0 }}>
         <Button onClick={handleClose} disabled={isLoading}>Cancelar</Button>
         <Box sx={{ position: 'relative' }}>
           <Button
