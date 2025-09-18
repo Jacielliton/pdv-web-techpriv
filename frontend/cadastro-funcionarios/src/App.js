@@ -2,6 +2,8 @@
 import React, { useEffect } from 'react';
 import Routes from './routes';
 import axios from 'axios'; // Importe o axios se ainda não tiver
+import { AuthProvider } from './contexts/auth';
+import { ThemeProvider } from './contexts/theme'; 
 
 function App() {
   // useEffect para verificar a saúde do backend
@@ -20,7 +22,13 @@ function App() {
     checkBackendStatus();
   }, []); // O array vazio [] faz com que rode apenas uma vez
 
-  return <Routes />;
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <Routes />
+      </ThemeProvider>
+    </AuthProvider>
+  );
 }
 
 export default App;

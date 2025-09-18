@@ -7,6 +7,7 @@ import ModalAberturaCaixa from '../components/ModalAberturaCaixa';
 import ModalMovimentacaoCaixa from '../components/ModalMovimentacaoCaixa';
 import { toast } from 'react-toastify';
 import ManagerOverrideDialog from '../components/ManagerOverrideDialog';
+import ProdutoCard from '../components/ProdutoCard';
 import { 
   Container, Typography, Grid, TextField, List, ListItem, ListItemButton, ListItemText,
   Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -68,7 +69,7 @@ function FrenteDeCaixa() {
   
 
   const produtosFiltrados = useMemo(() => {
-    if (termoBusca.length < 2) return [];
+    if (!termoBusca) return todosProdutos; // Se a busca está vazia, mostra todos
     return todosProdutos.filter(p =>
       p.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
       (p.codigo_barras && p.codigo_barras.includes(termoBusca))
@@ -224,39 +225,47 @@ function FrenteDeCaixa() {
   if (caixaStatus === 'FECHADO') {
     return <ModalAberturaCaixa open={true} />;
   }
+  
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="xl"> {/* Usamos 'xl' para mais espaço */}
       <Typography variant="h4" component="h1" gutterBottom>Frente de Caixa</Typography>
-      <Typography variant="subtitle1">Operador: {user?.nome}</Typography>
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-        
-        {/* Coluna da Esquerda: Busca e Carrinho */}
-        <Grid xs={12} md={7}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6">Adicionar Produto</Typography>
+      <Typography variant="subtitle1" gutterBottom>Operador: {user?.nome}</Typography>
+      
+      {/* 2. NOVA ESTRUTURA DE LAYOUT COM GRID */}
+      <Grid container spacing={3}>
+
+        {/* --- COLUNA DA ESQUERDA (PRODUTOS) --- */}
+        <Grid item xs={12} md={7}>
+          <Paper sx={{ p: 2, mb: 2 }}>
             <TextField
               fullWidth
-              label="Digite o nome ou código de barras"
+              label="Buscar Produto por nome ou código de barras"
               variant="outlined"
               value={termoBusca}
               onChange={e => setTermoBusca(e.target.value)}
-              sx={{ mt: 2 }}
             />
-            {produtosFiltrados.length > 0 && (
-              <Paper sx={{ maxHeight: 200, overflow: 'auto', mt: 1 }}>
-                <List>
-                  {produtosFiltrados.map(p => (
-                    <ListItem button key={p.id} onClick={() => adicionarAoCarrinho(p)}>
-                      <ListItemText primary={p.nome} secondary={`R$ ${Number(p.preco).toFixed(2)} | Estoque: ${p.quantidade_estoque}`} />
-                    </ListItem>
-                  ))}
-                </List>
-              </Paper>
-            )}
           </Paper>
           
-          <TableContainer component={Paper} sx={{ mt: 3 }}>
+          {/* 3. NOVA GRADE DE PRODUTOS */}
+          <Paper sx={{ p: 2, height: '70vh', overflowY: 'auto' }}>
+            <Grid container spacing={2}>
+              {produtosFiltrados.map(produto => (
+                <Grid item key={produto.id} xs={6} sm={4} md={3}>
+                  <ProdutoCard 
+                    produto={produto}
+                    onProdutoClick={adicionarAoCarrinho} 
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          </Paper>
+        </Grid>
+
+        {/* --- COLUNA DA DIREITA (VENDA) --- */}
+        <Grid item xs={12} md={5}>
+          {/* ITENS DA VENDA (CARRINHO) */}
+          <TableContainer component={Paper} sx={{ mb: 2 }}>
             <Typography variant="h6" sx={{ p: 2 }}>Itens da Venda</Typography>
             <Table>
               <TableHead>
