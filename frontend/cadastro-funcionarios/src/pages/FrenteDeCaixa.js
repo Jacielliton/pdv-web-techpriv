@@ -98,7 +98,20 @@ function FrenteDeCaixa() {
     setModalMovimentacaoOpen(false);
   };
 
-  const adicionarAoCarrinho = (produto) => {
+  const adicionarAoCarrinho = (produto) => {       
+    // 1. Verifica se o produto já está no carrinho para saber a quantidade atual
+    const itemExistente = carrinho.find(item => item.id === produto.id);
+    const quantidadeAtualNoCarrinho = itemExistente ? itemExistente.quantidade : 0;
+
+    // 2. A NOVA VALIDAÇÃO:
+    // Verifica se a quantidade que o usuário TENTARÁ colocar (a atual + 1) ultrapassa o estoque.
+    if ((quantidadeAtualNoCarrinho + 1) > produto.quantidade_estoque) {
+      toast.error(`Estoque insuficiente para "${produto.nome}". Disponível: ${produto.quantidade_estoque}`);
+      return; // Interrompe a função e não adiciona o produto
+    }
+    // --- FIM DA LÓGICA DE VALIDAÇÃO ---
+
+    // Se a validação passar, o código antigo para adicionar ao carrinho continua normalmente
     setCarrinho(carrinhoAtual => {
       const produtoExistente = carrinhoAtual.find(item => item.id === produto.id);
       if (produtoExistente) {
