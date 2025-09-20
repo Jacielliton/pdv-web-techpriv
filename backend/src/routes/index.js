@@ -7,7 +7,6 @@ const SessionController = require('../controllers/SessionController');
 const ProdutoController = require('../controllers/ProdutoController');
 const VendaController = require('../controllers/VendaController');
 const DashboardController = require('../controllers/DashboardController');
-const PagSeguroController = require('../controllers/PagSeguroController'); 
 const CaixaController = require('../controllers/CaixaController');
 const RelatorioController = require('../controllers/RelatorioController'); // 1. IMPORTE
 
@@ -40,6 +39,7 @@ routes.post('/caixa/movimentacao', CaixaController.registrarMovimentacao);
 routes.get('/caixa/resumo', CaixaController.getResumo);
 routes.post('/caixa/fechar', CaixaController.fecharCaixa); // <--- MOVIDO PARA CIMA
 
+
 // ===================================================================
 // APLICA O MIDDLEWARE DE AUTORIZAÇÃO DE GERENTE
 routes.use(authManagerMiddleware);
@@ -63,9 +63,5 @@ routes.get('/dashboard/vendas-semanais', DashboardController.getVendasSemanais);
 routes.get('/caixas/historico', CaixaController.getHistorico);
 routes.get('/relatorios/vendas', RelatorioController.getRelatorioVendas);
 
-
-// Rotas do PagSeguro
-routes.post('/pagamento/pagseguro/order', PagSeguroController.createOrder);
-routes.get('/pagamento/pagseguro/devices', PagSeguroController.listDevices);
 
 module.exports = routes;

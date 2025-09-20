@@ -27,9 +27,6 @@ function FrenteDeCaixa() {
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [itemParaRemover, setItemParaRemover] = useState(null);
   const [overrideError, setOverrideError] = useState('');
-  const [devices, setDevices] = useState([]);
-  const [selectedDevice, setSelectedDevice] = useState('');
-  const [pagamentoPendente, setPagamentoPendente] = useState(false);
   const [modalMovimentacaoOpen, setModalMovimentacaoOpen] = useState(false);
   const [tipoMovimentacao, setTipoMovimentacao] = useState('');
   const [vendaFinalizada, setVendaFinalizada] = useState(null);
@@ -52,21 +49,7 @@ function FrenteDeCaixa() {
     fetchProdutos();
   }, []);
 
-  useEffect(() => {
-    const fetchDevices = async () => {
-      try {
-        const response = await api.get('/pagamento/pagseguro/devices');
-        setDevices(response.data);
-        if (response.data.length > 0) {
-          setSelectedDevice(response.data[0].id);
-        }
-      } catch (error) {
-        console.error("Nenhum dispositivo PagSeguro encontrado.");
-      }
-    };
-    fetchDevices();
-  }, []);
-
+ 
   const produtosFiltrados = useMemo(() => {
     if (!termoBusca) return todosProdutos;
     return todosProdutos.filter(p =>
@@ -145,62 +128,37 @@ function FrenteDeCaixa() {
   };
 
   const finalizarVenda = async () => {
-    if (carrinho.length === 0) {
-      toast.error('Adicione pelo menos um item à venda.');
-      return;
-    }
-    const registrarVendaNoSistema = async (metodo) => {
-      const payload = {
-        valor_total: totalVenda,
-        metodo_pagamento: metodo,
-        itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
-      };
-      try {
-        const response = await api.post('/vendas', payload);
-        toast.success('Venda registrada com sucesso!');
-        const novaVendaId = response.data.venda?.id;
-        if (novaVendaId) {
-          const responseDetalhada = await api.get(`/vendas/${novaVendaId}`);
-          setVendaFinalizada(responseDetalhada.data);
-        } else {
-          toast.error("Ocorreu um erro ao processar a venda.");
-        }
-        setCarrinho([]);
-        setValorPago('');
-      } catch (error) {
-        toast.error(error.response?.data?.error || 'Erro crítico ao registrar a venda.');
-      }
-    };
+  if (carrinho.length === 0) {
+    toast.error('Adicione pelo menos um item à venda.');
+    return;
+  }
 
-    if (metodoPagamento === 'Cartão (PagSeguro)') {
-      if (!selectedDevice) {
-        toast.error('Nenhum dispositivo (Tap on Phone) selecionado ou disponível.');
-        return;
-      }
-      setPagamentoPendente(true);
-      toast.info('Enviando cobrança para o dispositivo...');
-      
-      const payload = {
-        valor_total: totalVenda,
-        itens: carrinho.map(item => ({ nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
-        device_id: selectedDevice,
-      };
-
-      try {
-        // ALTERADO: Usa a instância 'api' que envia o token
-        await api.post('/pagamento/pagseguro/order', payload);
-        toast.success('Cobrança enviada! Aguarde o pagamento do cliente no celular.');
-        setCarrinho([]);
-        setValorPago('');
-      } catch (error) {
-        toast.error('Erro ao enviar cobrança para o dispositivo.');
-      } finally {
-        setPagamentoPendente(false);
-      }
-    } else {
-      await registrarVendaNoSistema(metodoPagamento);
-    }
+  // A lógica agora é direta, sem if/else para o método de pagamento
+  const payload = {
+    valor_total: totalVenda,
+    metodo_pagamento: metodoPagamento, // Usa o método selecionado no estado
+    itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
   };
+
+  try {
+    const response = await api.post('/vendas', payload);
+    toast.success('Venda registrada com sucesso!');
+
+    const novaVendaId = response.data.venda?.id;
+    if (novaVendaId) {
+      const responseDetalhada = await api.get(`/vendas/${novaVendaId}`);
+      setVendaFinalizada(responseDetalhada.data); // Abre o modal de sucesso
+    } else {
+      toast.error("Ocorreu um erro ao processar a venda.");
+    }
+
+    setCarrinho([]);
+    setValorPago('');
+
+  } catch (error) {
+    toast.error(error.response?.data?.error || 'Erro crítico ao registrar a venda.');
+  }
+};
 
  
   const handleNovaVenda = () => {
@@ -316,13 +274,18 @@ function FrenteDeCaixa() {
             </Box>
           
             <FormControl fullWidth>
-                <InputLabel>Método de Pagamento</InputLabel>
-                <Select value={metodoPagamento} label="Método de Pagamento" onChange={e => setMetodoPagamento(e.target.value)}>
-                    <MenuItem value="Dinheiro">Dinheiro</MenuItem>
-                    <MenuItem value="Cartão (PagSeguro)">Cartão (Tap on Phone)</MenuItem>
-                    <MenuItem value="Pix">Pix</MenuItem>
-                </Select>
-            </FormControl>
+              <InputLabel>Método de Pagamento</InputLabel>
+              <Select 
+                value={metodoPagamento} 
+                label="Método de Pagamento" 
+                onChange={e => setMetodoPagamento(e.target.value)}
+              >
+                  <MenuItem value="Dinheiro">Dinheiro</MenuItem>
+                  <MenuItem value="Cartão de Crédito">Cartão de Crédito</MenuItem>
+                  <MenuItem value="Cartão de Débito">Cartão de Débito</MenuItem>
+                  <MenuItem value="Pix">Pix</MenuItem>
+              </Select>
+          </FormControl>            
           
             {metodoPagamento === 'Dinheiro' && (
               <TextField label="Valor Pago" type="number" fullWidth value={valorPago} onChange={(e) => setValorPago(e.target.value)} />
@@ -339,10 +302,10 @@ function FrenteDeCaixa() {
 
             <Button
               variant="contained" color="success" size="large" onClick={finalizarVenda}
-              disabled={carrinho.length === 0 || pagamentoPendente}
+              disabled={carrinho.length === 0} // <--- REMOVA '|| pagamentoPendente'
               sx={{ p: 1.5, fontSize: '1.1rem', fontWeight: 'bold' }}
             >
-              {pagamentoPendente ? <CircularProgress size={24} color="inherit" /> : 'Finalizar Venda'}
+              Finalizar Venda
             </Button>
         </Box>
       </Paper>

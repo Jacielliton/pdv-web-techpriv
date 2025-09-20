@@ -64,7 +64,21 @@ function HistoricoVendas() {
           <Grid item xs={12} sm={4}><TextField name="vendaId" label="Buscar por ID" value={filtros.vendaId} onChange={handleFiltroChange} fullWidth size="small" /></Grid>
           <Grid item xs={12} sm={4}><TextField name="dataInicio" label="Data Início" type="date" value={filtros.dataInicio} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
           <Grid item xs={12} sm={4}><TextField name="dataFim" label="Data Fim" type="date" value={filtros.dataFim} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
-          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>Método Pagto.</InputLabel><Select name="metodoPagamento" value={filtros.metodoPagamento} label="Método Pagto." onChange={handleFiltroChange}><MenuItem value=""><em>Todos</em></MenuItem><MenuItem value="Dinheiro">Dinheiro</MenuItem><MenuItem value="Pix">Pix</MenuItem><MenuItem value="Cartão (PagSeguro)">Cartão (PagSeguro)</MenuItem></Select></FormControl></Grid>
+          <Grid item xs={12} sm={4}><FormControl fullWidth size="small">
+            <InputLabel>Método Pagto.</InputLabel>
+            <Select 
+              name="metodoPagamento" 
+              value={filtros.metodoPagamento} 
+              label="Método Pagto." 
+              onChange={handleFiltroChange}
+            >
+              <MenuItem value=""><em>Todos</em></MenuItem>
+              <MenuItem value="Dinheiro">Dinheiro</MenuItem>
+              <MenuItem value="Cartão de Crédito">Cartão de Crédito</MenuItem>
+              <MenuItem value="Cartão de Débito">Cartão de Débito</MenuItem>
+              <MenuItem value="Pix">Pix</MenuItem>
+            </Select>
+          </FormControl></Grid>
           <Grid item xs={12} sm={4}><Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Filtrar</Button></Grid>
           <Grid item xs={12} sm={4}><Button variant="outlined" onClick={handleLimparFiltros} fullWidth>Limpar Filtros</Button></Grid>
         </Grid>
