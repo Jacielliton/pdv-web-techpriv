@@ -1,4 +1,5 @@
-// frontend/cadastro-funcionarios/src/components/Layout.js (VERSÃO FINAL E CORRIGIDA)
+// frontend/cadastro-funcionarios/src/components/Layout.js
+
 import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
@@ -10,92 +11,56 @@ import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 
 const Layout = () => {
-  // 1. Pegamos o 'caixaStatus' do nosso hook
   const { signOut, user, isManager, caixaStatus } = useAuth();
   const { mode, toggleTheme } = useTheme();
 
+  // O container principal agora terá altura total
+  const layoutStyle = {
+    display: 'flex',
+    height: '100vh', 
+    overflow: 'hidden' // Evita barras de rolagem desnecessárias
+  };
+
   const navStyle = { 
     width: '240px', 
-    height: '100vh', 
+    flexShrink: 0, // Impede que o menu encolha
     display: 'flex', 
     flexDirection: 'column',
-    // Usa a cor de fundo padrão do tema (claro ou escuro)
     backgroundColor: (theme) => theme.palette.background.paper, 
+    borderRight: '1px solid',
+    borderColor: 'divider'
   };
+
   const contentStyle = { 
     flex: 1, 
-    padding: '20px', 
+    // Padding removido daqui para ser controlado pela página
     overflowY: 'auto',
-    // Usa a cor de fundo secundária do tema
     backgroundColor: (theme) => theme.palette.background.default,
   };
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={layoutStyle}>
       <Box component="nav" sx={navStyle}>
+        {/* ... Seu conteúdo de navegação (List, Typography, etc) permanece o mesmo ... */}
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h5" component="h1">PDV</Typography>
-          {/* 3. ADICIONE O BOTÃO DE TROCA DE TEMA */}
           <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit">
             {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
         </Box>
         <Divider />
-        <List>
-          <ListItem disablePadding>
-            <ListItemButton component={Link} to="/venda">
-              <ListItemText primary="Frente de Caixa" />
-            </ListItemButton>
-          </ListItem>
-
-          {/* 2. LÓGICA CORRIGIDA: O link 'Fechar Caixa' aparece para TODOS se o caixa estiver ABERTO */}
-          {caixaStatus === 'ABERTO' && (
-            <ListItem disablePadding>
-              <ListItemButton component={Link} to="/fechamento-caixa" sx={{ backgroundColor: 'rgba(25, 118, 210, 0.1)' }}>
-                <ListItemText primary="Fechar Caixa" sx={{ color: 'primary.main', fontWeight: 'bold' }} />
-              </ListItemButton>
-            </ListItem>
-          )}
-          
-          {isManager && (
-            <>
-              <ListItem disablePadding>
-                <ListItemButton component={Link} to="/historico">
-                  <ListItemText primary="Histórico de Vendas" />
-                </ListItemButton>
-              </ListItem>
-              
-               <ListItem disablePadding>
-                <ListItemButton component={Link} to="/historico-caixas">
-                  <ListItemText primary="Histórico de Caixas" />
-                </ListItemButton>
-              </ListItem>
-
-              <ListItem disablePadding>
-                <ListItemButton component={Link} to="/relatorios">
-                  <ListItemText primary="Relatórios" />
-                </ListItemButton>
-              </ListItem>
-
-              <ListItem disablePadding>
-                <ListItemButton component={Link} to="/">
-                  <ListItemText primary="Dashboard" />
-                </ListItemButton>
-              </ListItem>
-              <ListItem disablePadding>
-                <ListItemButton component={Link} to="/funcionarios">
-                  <ListItemText primary="Funcionários" />
-                </ListItemButton>
-              </ListItem>
-              <ListItem disablePadding>
-                <ListItemButton component={Link} to="/produtos">
-                  <ListItemText primary="Produtos" />
-                </ListItemButton>
-              </ListItem>
-            </>
-          )}
+        <List sx={{ overflowY: 'auto' }}>
+          <ListItem disablePadding><ListItemButton component={Link} to="/venda"><ListItemText primary="Frente de Caixa" /></ListItemButton></ListItem>
+          {caixaStatus === 'ABERTO' && (<ListItem disablePadding><ListItemButton component={Link} to="/fechamento-caixa" sx={{ backgroundColor: 'rgba(25, 118, 210, 0.1)' }}><ListItemText primary="Fechar Caixa" sx={{ color: 'primary.main', fontWeight: 'bold' }} /></ListItemButton></ListItem>)}
+          {isManager && (<>
+            <ListItem disablePadding><ListItemButton component={Link} to="/historico"><ListItemText primary="Histórico de Vendas" /></ListItemButton></ListItem>
+            <ListItem disablePadding><ListItemButton component={Link} to="/historico-caixas"><ListItemText primary="Histórico de Caixas" /></ListItemButton></ListItem>
+            <ListItem disablePadding><ListItemButton component={Link} to="/relatorios"><ListItemText primary="Relatórios" /></ListItemButton></ListItem>
+            <ListItem disablePadding><ListItemButton component={Link} to="/"><ListItemText primary="Dashboard" /></ListItemButton></ListItem>
+            <ListItem disablePadding><ListItemButton component={Link} to="/funcionarios"><ListItemText primary="Funcionários" /></ListItemButton></ListItem>
+            <ListItem disablePadding><ListItemButton component={Link} to="/produtos"><ListItemText primary="Produtos" /></ListItemButton></ListItem>
+          </>)}
         </List>
-        
         <Box sx={{ marginTop: 'auto', p: 2 }}>
           <Divider />
           <Typography sx={{ mt: 2 }}>Olá, {user?.nome}</Typography>
@@ -108,10 +73,7 @@ const Layout = () => {
         <Outlet />
       </Box>
 
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-      />
+      <ToastContainer position="top-right" autoClose={3000} />
     </Box>
   );
 };

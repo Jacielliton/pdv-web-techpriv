@@ -1,24 +1,50 @@
-// frontend/cadastro-funcionarios/src/components/ProdutoCard.js
 import React from 'react';
 import { Card, CardActionArea, CardContent, Typography, Box } from '@mui/material';
 
 const ProdutoCard = ({ produto, onProdutoClick }) => {
+  const semEstoque = produto.quantidade_estoque <= 0;
+
   return (
-    <Card sx={{ height: '100%' }}>
+    // Adicionamos um efeito de borda no hover e desabilitamos o card se não houver estoque
+    <Card 
+      sx={{ 
+        height: '100%', 
+        border: '1px solid',
+        borderColor: 'divider',
+        opacity: semEstoque ? 0.5 : 1, // Fica esmaecido se sem estoque
+        transition: 'box-shadow 0.3s',
+        '&:hover': {
+          boxShadow: (theme) => theme.shadows[4],
+        },
+      }}
+      elevation={1}
+    >
       <CardActionArea 
-        onClick={() => onProdutoClick(produto)} 
-        sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+        onClick={() => !semEstoque && onProdutoClick(produto)} 
+        disabled={semEstoque}
+        sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 1 }}
       >
-        <CardContent>
-          <Typography gutterBottom variant="subtitle1" component="div" sx={{ fontWeight: 'bold' }}>
+        {/* Conteúdo do Card com melhor alinhamento */}
+        <CardContent sx={{ flex: 1, textAlign: 'center' }}>
+          <Typography 
+            variant="body1" 
+            component="div" 
+            sx={{ fontWeight: 'bold', mb: 1 }}
+          >
             {produto.nome}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Estoque: {produto.quantidade_estoque}
+          <Typography variant="caption" color="text.secondary">
+            {semEstoque ? 'Sem Estoque' : `Estoque: ${produto.quantidade_estoque}`}
           </Typography>
         </CardContent>
-        <Box sx={{ width: '100%', p: 2, pt: 0 }}>
-          <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', textAlign: 'right' }}>
+
+        {/* Preço com mais destaque */}
+        <Box sx={{ width: '100%', mt: 'auto' }}>
+          <Typography 
+            variant="h6" 
+            color="primary.main" 
+            sx={{ fontWeight: 'bold', textAlign: 'center', p: 1, backgroundColor: 'action.hover', borderRadius: 1 }}
+          >
             R$ {Number(produto.preco).toFixed(2)}
           </Typography>
         </Box>

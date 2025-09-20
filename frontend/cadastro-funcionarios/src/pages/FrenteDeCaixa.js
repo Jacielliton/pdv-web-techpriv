@@ -12,7 +12,7 @@ import {
   Container, Typography, Grid, TextField, 
   Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Button, Select, MenuItem, FormControl, InputLabel, IconButton,
-  Box, CircularProgress, Stack, Dialog, DialogTitle, DialogContent, DialogActions 
+  Box, CircularProgress, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Divider 
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -235,207 +235,127 @@ function FrenteDeCaixa() {
   }
 
   return (
-    <Container maxWidth="xl"> {/* Usamos 'xl' para mais espaço */}
-      <Typography variant="h4" component="h1" gutterBottom>Frente de Caixa</Typography>
-      <Typography variant="subtitle1" gutterBottom>Operador: {user?.nome}</Typography>
+    <Box sx={{ display: 'flex', height: '100%', p: 2, gap: 2 }}>
       
-      {/* 2. NOVA ESTRUTURA DE LAYOUT COM GRID */}
-      <Grid container spacing={3}>
+      {/* Coluna Central (7/12) - Produtos */}
+      <Box sx={{ flex: 7, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <TextField
+          fullWidth
+          label="Buscar Produto por nome ou código de barras"
+          variant="outlined"
+          value={termoBusca}
+          onChange={e => setTermoBusca(e.target.value)}
+        />
+        <Paper sx={{ flex: 1, p: 2, overflowY: 'auto' }}>
+          <Grid container spacing={2}>
+            {produtosFiltrados.map(produto => (
+              <Grid item key={produto.id} xs={6} sm={4} md={3} xl={2}>
+                <ProdutoCard produto={produto} onProdutoClick={adicionarAoCarrinho} />
+              </Grid>
+            ))}
+          </Grid>
+        </Paper>
+      </Box>
 
-        {/* --- COLUNA DA ESQUERDA (PRODUTOS) --- */}
-        <Grid item xs={12} md={7}>
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <TextField
-              fullWidth
-              label="Buscar Produto por nome ou código de barras"
-              variant="outlined"
-              value={termoBusca}
-              onChange={e => setTermoBusca(e.target.value)}
-            />
-          </Paper>
-          
-          {/* 3. NOVA GRADE DE PRODUTOS */}
-          <Paper sx={{ p: 2, height: '70vh', overflowY: 'auto' }}>
-            <Grid container spacing={2}>
-              {produtosFiltrados.map(produto => (
-                <Grid item key={produto.id} xs={6} sm={4} md={3}>
-                  <ProdutoCard 
-                    produto={produto}
-                    onProdutoClick={adicionarAoCarrinho} 
-                  />
-                </Grid>
-              ))}
-            </Grid>
-          </Paper>
-        </Grid>
-
-        {/* --- COLUNA DA DIREITA (VENDA) --- */}
-        <Grid item xs={12} md={5}>
-          {/* ITENS DA VENDA (CARRINHO) */}
-          <TableContainer component={Paper} sx={{ mb: 2 }}>
-            <Typography variant="h6" sx={{ p: 2 }}>Itens da Venda</Typography>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Produto</TableCell>
-                  <TableCell align="center" sx={{ width: 120 }}>Qtd.</TableCell>
-                  <TableCell align="right">Preço Unit.</TableCell>
-                  <TableCell align="right">Subtotal</TableCell>
-                  <TableCell align="center">Ação</TableCell>
+      {/* Coluna da Direita (5/12) - Carrinho e Pagamento */}
+      <Paper sx={{ flex: 5, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 32px)' }}>
+        <Typography variant="h5" sx={{ p: 2, pb: 1 }}>Itens da Venda</Typography>
+        <Divider />
+        <TableContainer sx={{ flex: 1, overflowY: 'auto' }}>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Produto</TableCell>
+                <TableCell align="center">Qtd.</TableCell>
+                <TableCell align="right">Subtotal</TableCell>
+                <TableCell align="center">Ação</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {carrinho.length > 0 ? carrinho.map(item => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{item.nome}</Typography>
+                    <Typography variant="caption" color="text.secondary">R$ {Number(item.preco).toFixed(2)}</Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <TextField
+                      type="number" value={item.quantidade}
+                      onChange={(e) => handleQuantidadeChange(item.id, e.target.value)}
+                      size="small" sx={{ width: '80px' }}
+                      InputProps={{ inputProps: { min: 1, max: todosProdutos.find(p => p.id === item.id)?.quantidade_estoque } }}
+                    />
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'medium' }}>R$ {(item.quantidade * item.preco).toFixed(2)}</TableCell>
+                  <TableCell align="center">
+                    <IconButton size="small" color="error" onClick={() => removerDoCarrinho(item.id)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {carrinho.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.nome}</TableCell>
-                    <TableCell align="center">
-                      {/* 2. CAMPO DE QUANTIDADE SUBSTITUÍDO POR UM TEXTFIELD */}
-                      <TextField
-                        type="number"
-                        value={item.quantidade}
-                        onChange={(e) => handleQuantidadeChange(item.id, e.target.value)}
-                        size="small"
-                        sx={{ width: '80px' }}
-                        InputProps={{
-                          inputProps: { 
-                            min: 1, 
-                            max: todosProdutos.find(p => p.id === item.id)?.quantidade_estoque 
-                          }
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="right">R$ {Number(item.preco).toFixed(2)}</TableCell>
-                    <TableCell align="right">R$ {(item.quantidade * item.preco).toFixed(2)}</TableCell>
-                    <TableCell align="center">
-                      <IconButton size="small" color="error" onClick={() => removerDoCarrinho(item.id)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Grid>
-        
-        {/* Coluna da Direita: Total e Finalização */}
-      <Grid item xs={12} md={5}>
-          <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography variant="h4">Total</Typography>
-            <Typography variant="h3" component="p" sx={{ fontWeight: 'bold' }}>
-              R$ {totalVenda.toFixed(2)}
-            </Typography>
-            
-            <FormControl fullWidth>
-              <InputLabel>Método de Pagamento</InputLabel>
-              <Select
-                value={metodoPagamento}
-                label="Método de Pagamento"
-                onChange={e => setMetodoPagamento(e.target.value)}
-              >
-                <MenuItem value="Dinheiro">Dinheiro</MenuItem>
-                <MenuItem value="Cartão (PagSeguro)">Cartão (Tap on Phone)</MenuItem>
-                <MenuItem value="Pix">Pix</MenuItem>
-              </Select>
-            </FormControl>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={4} align="center">
+                    <Typography color="text.secondary" sx={{ py: 4 }}>Carrinho vazio</Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-            {metodoPagamento === 'Cartão (PagSeguro)' && (
-              <FormControl fullWidth>
-                <InputLabel>Dispositivo</InputLabel>
-                <Select
-                  value={selectedDevice}
-                  label="Dispositivo"
-                  onChange={e => setSelectedDevice(e.target.value)}
-                  disabled={devices.length === 0}
-                >
-                  {devices.length > 0 ? (
-                    devices.map(device => (
-                      <MenuItem key={device.id} value={device.id}>{device.display_name}</MenuItem>
-                    ))
-                  ) : (
-                    <MenuItem disabled>Nenhum dispositivo online</MenuItem>
-                  )}
+        <Divider />
+        
+        {/* Seção de Pagamento */}
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <Typography variant="h5">Total</Typography>
+                <Typography variant="h4" component="p" sx={{ fontWeight: 'bold' }}>
+                R$ {totalVenda.toFixed(2)}
+                </Typography>
+            </Box>
+          
+            <FormControl fullWidth>
+                <InputLabel>Método de Pagamento</InputLabel>
+                <Select value={metodoPagamento} label="Método de Pagamento" onChange={e => setMetodoPagamento(e.target.value)}>
+                    <MenuItem value="Dinheiro">Dinheiro</MenuItem>
+                    <MenuItem value="Cartão (PagSeguro)">Cartão (Tap on Phone)</MenuItem>
+                    <MenuItem value="Pix">Pix</MenuItem>
                 </Select>
-              </FormControl>
-            )}
-            
+            </FormControl>
+          
             {metodoPagamento === 'Dinheiro' && (
-              <TextField
-                label="Valor Pago"
-                type="number"
-                fullWidth
-                value={valorPago}
-                onChange={(e) => setValorPago(e.target.value)}
-              />
+              <TextField label="Valor Pago" type="number" fullWidth value={valorPago} onChange={(e) => setValorPago(e.target.value)} />
             )}
             
             {troco > 0 && (
-              <div>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <Typography variant="h6">Troco</Typography>
-                <Typography variant="h4" component="p" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                <Typography variant="h5" component="p" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                   R$ {troco.toFixed(2)}
                 </Typography>
-              </div>
+              </Box>
             )}
 
-            <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-                <Button variant="outlined" fullWidth onClick={() => handleOpenMovimentacaoModal('SANGRIA')}>
-                    Registrar Sangria
-                </Button>
-                <Button variant="outlined" fullWidth onClick={() => handleOpenMovimentacaoModal('SUPRIMENTO')}>
-                    Registrar Suprimento
-                </Button>
-            </Stack>
-
             <Button
-              variant="contained"
-              color="success"
-              size="large"
-              onClick={finalizarVenda}
+              variant="contained" color="success" size="large" onClick={finalizarVenda}
               disabled={carrinho.length === 0 || pagamentoPendente}
-              sx={{ mt: 2, p: 2, fontSize: '1.2rem' }}
+              sx={{ p: 1.5, fontSize: '1.1rem', fontWeight: 'bold' }}
             >
-              {pagamentoPendente ? 'Aguardando...' : 'Finalizar Venda'}
+              {pagamentoPendente ? <CircularProgress size={24} color="inherit" /> : 'Finalizar Venda'}
             </Button>
-        </Paper>
-      </Grid>
-      </Grid>
-      <ManagerOverrideDialog
-        open={overrideDialogOpen}
-        onClose={() => setOverrideDialogOpen(false)}
-        onConfirm={handleManagerAuthorize}
-        error={overrideError}
-      />
-      <ModalMovimentacaoCaixa
-        open={modalMovimentacaoOpen}
-        onClose={handleCloseMovimentacaoModal}
-        tipo={tipoMovimentacao}
-      />
-      
-      {/* MODAL DE SUCESSO DA VENDA */}
+        </Box>
+      </Paper>
+
+      {/* Seus Modais (sem alteração no JSX, apenas na posição) */}
+      <ManagerOverrideDialog open={overrideDialogOpen} onClose={() => setOverrideDialogOpen(false)} onConfirm={handleManagerAuthorize} error={overrideError} />
+      <ModalMovimentacaoCaixa open={modalMovimentacaoOpen} onClose={handleCloseMovimentacaoModal} tipo={tipoMovimentacao} />
       <Dialog open={!!vendaFinalizada} onClose={handleNovaVenda}>
         <DialogTitle>Venda Finalizada com Sucesso!</DialogTitle>
-        <DialogContent>
-          <Typography>Venda ID: {vendaFinalizada?.id}</Typography>
-          <Typography variant="h5" sx={{ mt: 2 }}>
-            Total: R$ {Number(vendaFinalizada?.valor_total).toFixed(2)}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleNovaVenda}>Nova Venda</Button>
-          <Button 
-            onClick={() => {
-              window.open(`/recibo/${vendaFinalizada.id}`, '_blank');
-              handleNovaVenda();
-            }} 
-            variant="contained" 
-            autoFocus
-          >
-            Imprimir Recibo
-          </Button>
-        </DialogActions>
+        <DialogContent><Typography>Venda ID: {vendaFinalizada?.id}</Typography><Typography variant="h5" sx={{ mt: 2 }}>Total: R$ {Number(vendaFinalizada?.valor_total).toFixed(2)}</Typography></DialogContent>
+        <DialogActions><Button onClick={handleNovaVenda}>Nova Venda</Button><Button onClick={() => { window.open(`/recibo/${vendaFinalizada.id}`, '_blank'); handleNovaVenda(); }} variant="contained" autoFocus>Imprimir Recibo</Button></DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 }
 
