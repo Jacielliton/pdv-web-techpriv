@@ -1,12 +1,9 @@
 // src/pages/HistoricoVendas.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
-import PrintController from '../components/PrintController'; // 1. Importa o novo controller
-import { 
-  Container, Typography, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemText, 
-  Grid, Box, CircularProgress, IconButton, Pagination, Paper, TextField, Button, 
-  Select, MenuItem, FormControl, InputLabel 
-} from '@mui/material';
+import Recibo from '../components/Recibo';
+import { useReactToPrint } from 'react-to-print';
+import { Container, Typography, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemText, Grid, Box, CircularProgress, IconButton, Pagination, Paper, TextField, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PrintIcon from '@mui/icons-material/Print';
 import { toast } from 'react-toastify';
@@ -14,22 +11,28 @@ import { toast } from 'react-toastify';
 function HistoricoVendas() {
   const [vendas, setVendas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // 2. Lógica de impressão simplificada
   const [vendaParaImprimir, setVendaParaImprimir] = useState(null);
+  const reciboRef = useRef();
 
+  
+
+  // --- ESTADOS DE PAGINAÇÃO E FILTROS ---
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filtros, setFiltros] = useState({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '' });
   const [filtrosAtivos, setFiltrosAtivos] = useState({});
+
+  // 1. ADICIONE O ESTADO PARA O ERRO
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchHistorico = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await api.get('/vendas', { params: { page, ...filtrosAtivos } });
+        const response = await api.get('/vendas', { 
+          params: { page, ...filtrosAtivos } // Envia a página e os filtros ativos
+        });
         setVendas(response.data.vendas);
         setTotalPages(response.data.totalPages);
       } catch (err) {
@@ -40,12 +43,7 @@ function HistoricoVendas() {
       }
     };
     fetchHistorico();
-  }, [page, filtrosAtivos]);
-
-  // 3. A função de impressão agora apenas define qual venda deve ser impressa
-  const handleImprimir = (venda) => {
-    setVendaParaImprimir(venda);
-  };
+  }, [page, filtrosAtivos]); // Roda novamente se a página ou os filtros mudarem
 
   const handleFiltroChange = (e) => {
     setFiltros({ ...filtros, [e.target.name]: e.target.value });
@@ -61,9 +59,26 @@ function HistoricoVendas() {
     setFiltros({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '' });
     setFiltrosAtivos({});
   };
+  
+  
+  const handlePrint = useReactToPrint({
+    content: () => reciboRef.current,
+    onAfterPrint: () => setVendaParaImprimir(null)
+  });
+
+  const prepararImpressao = (venda) => {
+    setVendaParaImprimir(venda);
+  };
+  
+  useEffect(() => {
+    if (vendaParaImprimir) {
+      handlePrint();
+    }
+  }, [vendaParaImprimir, handlePrint]);
+
 
   const handlePageChange = (event, value) => { setPage(value); };
- 
+
   if (loading) return ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box> );
   
   // Agora a variável 'error' existe e esta linha funcionará
@@ -112,13 +127,13 @@ function HistoricoVendas() {
       {!loading && !error && vendas.map(venda => (
         <Accordion key={venda.id}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Grid container alignItems="center">
-              <Grid item xs={8}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} sm={6}>
                 <Typography><strong>Venda #{venda.id}</strong> - {new Date(venda.data_venda).toLocaleString('pt-BR')}</Typography>
               </Grid>
-              <Grid item xs={4} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Typography><strong>R$ {Number(venda.valor_total).toFixed(2)}</strong></Typography>
-                <IconButton onClick={(e) => { e.stopPropagation(); handleImprimir(venda); }} color="primary">
+              <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <Typography>Total: <strong>R$ {Number(venda.valor_total).toFixed(2)}</strong></Typography>
+                <IconButton onClick={(e) => { e.stopPropagation(); prepararImpressao(venda); }} color="primary" sx={{ ml: 2 }}>
                   <PrintIcon />
                 </IconButton>
               </Grid>
@@ -150,13 +165,7 @@ function HistoricoVendas() {
         </Box>
       )}
 
-      {/* 4. O PrintController é renderizado aqui quando uma venda é selecionada para impressão */}
-      {vendaParaImprimir && (
-        <PrintController 
-          venda={vendaParaImprimir}
-          onPrintFinished={() => setVendaParaImprimir(null)} // Limpa o estado após a impressão
-        />
-      )}
+      <div style={{ display: 'none' }}><Recibo ref={reciboRef} venda={vendaParaImprimir} /></div>
     </Container>
   );
 }
