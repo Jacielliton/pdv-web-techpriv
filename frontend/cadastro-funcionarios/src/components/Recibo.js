@@ -1,14 +1,16 @@
+//pdv-web-techpriv\frontend\cadastro-funcionarios\src\components\Recibo.js
 import React from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableRow, Divider } from '@mui/material';
 
 // Usamos React.forwardRef para que a biblioteca de impressão possa acessar este componente
-const Recibo = React.forwardRef(({ venda }, ref) => {
+const Recibo = ({ venda }) => {
   if (!venda) {
-    return null;
+    return null; // Continua retornando null se não houver venda
   }
 
+  // O 'ref' foi removido do <Box>
   return (
-    <Box ref={ref} sx={{ padding: '20px', fontFamily: 'monospace', color: 'black' }}>
+    <Box sx={{ padding: '20px', fontFamily: 'monospace', color: 'black' }}>
       <Typography variant="h6" align="center">PDV - TechPriv</Typography>
       <Typography variant="body2" align="center">Comprovante de Venda</Typography>
       <Divider sx={{ my: 2 }} />
@@ -47,6 +49,6 @@ const Recibo = React.forwardRef(({ venda }, ref) => {
       </Typography>
     </Box>
   );
-});
+};
 
 export default Recibo;

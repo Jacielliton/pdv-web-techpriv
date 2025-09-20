@@ -31,6 +31,7 @@ routes.use(authMiddleware);
 // --- Rotas para TODOS os funcionários logados (Caixas e Gerentes) ---
 routes.get('/produtos', ProdutoController.index);
 routes.post('/vendas', VendaController.store);
+routes.get('/vendas/:id', VendaController.show);
 
 // --- ROTAS DE CAIXA MOVIDAS PARA A SEÇÃO CORRETA ---
 routes.get('/caixa/status', CaixaController.getStatus);

@@ -1,8 +1,5 @@
-// src/pages/HistoricoVendas.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import Recibo from '../components/Recibo';
-import { useReactToPrint } from 'react-to-print';
 import { Container, Typography, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemText, Grid, Box, CircularProgress, IconButton, Pagination, Paper, TextField, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PrintIcon from '@mui/icons-material/Print';
@@ -11,18 +8,10 @@ import { toast } from 'react-toastify';
 function HistoricoVendas() {
   const [vendas, setVendas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [vendaParaImprimir, setVendaParaImprimir] = useState(null);
-  const reciboRef = useRef();
-
-  
-
-  // --- ESTADOS DE PAGINAÇÃO E FILTROS ---
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filtros, setFiltros] = useState({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '' });
   const [filtrosAtivos, setFiltrosAtivos] = useState({});
-
-  // 1. ADICIONE O ESTADO PARA O ERRO
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -31,7 +20,7 @@ function HistoricoVendas() {
       setError(null);
       try {
         const response = await api.get('/vendas', { 
-          params: { page, ...filtrosAtivos } // Envia a página e os filtros ativos
+          params: { page, ...filtrosAtivos }
         });
         setVendas(response.data.vendas);
         setTotalPages(response.data.totalPages);
@@ -43,14 +32,14 @@ function HistoricoVendas() {
       }
     };
     fetchHistorico();
-  }, [page, filtrosAtivos]); // Roda novamente se a página ou os filtros mudarem
+  }, [page, filtrosAtivos]);
 
   const handleFiltroChange = (e) => {
     setFiltros({ ...filtros, [e.target.name]: e.target.value });
   };
 
   const handleAplicarFiltros = () => {
-    setPage(1); // Volta para a primeira página ao aplicar um novo filtro
+    setPage(1);
     setFiltrosAtivos(filtros);
   };
 
@@ -60,71 +49,30 @@ function HistoricoVendas() {
     setFiltrosAtivos({});
   };
   
-  
-  const handlePrint = useReactToPrint({
-    content: () => reciboRef.current,
-    onAfterPrint: () => setVendaParaImprimir(null)
-  });
-
-  const prepararImpressao = (venda) => {
-    setVendaParaImprimir(venda);
-  };
-  
-  useEffect(() => {
-    if (vendaParaImprimir) {
-      handlePrint();
-    }
-  }, [vendaParaImprimir, handlePrint]);
-
-
   const handlePageChange = (event, value) => { setPage(value); };
 
   if (loading) return ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box> );
-  
-  // Agora a variável 'error' existe e esta linha funcionará
   if (error) return <Typography color="error" sx={{ textAlign: 'center', mt: 4 }}>{error}</Typography>;
 
   return (
     <Container maxWidth="md">
       <Typography variant="h4" component="h1" gutterBottom>Histórico de Vendas</Typography>
 
-      {/* --- PAINEL DE FILTROS --- */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={4}>
-            <TextField name="vendaId" label="Buscar por ID da Venda" value={filtros.vendaId} onChange={handleFiltroChange} fullWidth size="small" />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField name="dataInicio" label="Data Início" type="date" value={filtros.dataInicio} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField name="dataFim" label="Data Fim" type="date" value={filtros.dataFim} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-             <FormControl fullWidth size="small">
-              <InputLabel>Método Pagto.</InputLabel>
-              <Select name="metodoPagamento" value={filtros.metodoPagamento} label="Método Pagto." onChange={handleFiltroChange}>
-                <MenuItem value=""><em>Todos</em></MenuItem>
-                <MenuItem value="Dinheiro">Dinheiro</MenuItem>
-                <MenuItem value="Pix">Pix</MenuItem>
-                <MenuItem value="Cartão (PagSeguro)">Cartão (PagSeguro)</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Filtrar</Button>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Button variant="outlined" onClick={handleLimparFiltros} fullWidth>Limpar Filtros</Button>
-          </Grid>
+          {/* ... Seus campos de filtro ... */}
+          <Grid item xs={12} sm={4}><TextField name="vendaId" label="Buscar por ID" value={filtros.vendaId} onChange={handleFiltroChange} fullWidth size="small" /></Grid>
+          <Grid item xs={12} sm={4}><TextField name="dataInicio" label="Data Início" type="date" value={filtros.dataInicio} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
+          <Grid item xs={12} sm={4}><TextField name="dataFim" label="Data Fim" type="date" value={filtros.dataFim} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
+          <Grid item xs={12} sm={4}><FormControl fullWidth size="small"><InputLabel>Método Pagto.</InputLabel><Select name="metodoPagamento" value={filtros.metodoPagamento} label="Método Pagto." onChange={handleFiltroChange}><MenuItem value=""><em>Todos</em></MenuItem><MenuItem value="Dinheiro">Dinheiro</MenuItem><MenuItem value="Pix">Pix</MenuItem><MenuItem value="Cartão (PagSeguro)">Cartão (PagSeguro)</MenuItem></Select></FormControl></Grid>
+          <Grid item xs={12} sm={4}><Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Filtrar</Button></Grid>
+          <Grid item xs={12} sm={4}><Button variant="outlined" onClick={handleLimparFiltros} fullWidth>Limpar Filtros</Button></Grid>
         </Grid>
       </Paper>
 
-      {loading && ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box> )}
-      {!loading && error && <Typography color="error">{error}</Typography>}
-      {!loading && !error && vendas.length === 0 && <Typography>Nenhuma venda encontrada para os filtros selecionados.</Typography>}
+      {vendas.length === 0 && <Typography>Nenhuma venda encontrada para os filtros selecionados.</Typography>}
       
-      {!loading && !error && vendas.map(venda => (
+      {vendas.map(venda => (
         <Accordion key={venda.id}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Grid container spacing={2} alignItems="center">
@@ -133,7 +81,14 @@ function HistoricoVendas() {
               </Grid>
               <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                 <Typography>Total: <strong>R$ {Number(venda.valor_total).toFixed(2)}</strong></Typography>
-                <IconButton onClick={(e) => { e.stopPropagation(); prepararImpressao(venda); }} color="primary" sx={{ ml: 2 }}>
+                <IconButton 
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    window.open(`/recibo/${venda.id}`, '_blank');
+                  }} 
+                  color="primary" 
+                  sx={{ ml: 2 }}
+                >
                   <PrintIcon />
                 </IconButton>
               </Grid>
@@ -164,8 +119,6 @@ function HistoricoVendas() {
           <Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" />
         </Box>
       )}
-
-      <div style={{ display: 'none' }}><Recibo ref={reciboRef} venda={vendaParaImprimir} /></div>
     </Container>
   );
 }

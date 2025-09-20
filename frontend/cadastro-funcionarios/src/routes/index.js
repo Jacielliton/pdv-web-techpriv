@@ -14,6 +14,8 @@ import HistoricoCaixas from '../pages/HistoricoCaixas';
 import Relatorios from '../pages/Relatorios';
 import FechamentoCaixa from '../pages/FechamentoCaixa'; 
 
+import PaginaRecibo from '../pages/PaginaRecibo';
+
 const Routes = () => {
   const { signed, loading, isManager } = useAuth();
 
@@ -34,6 +36,7 @@ const Routes = () => {
   return (
     <BrowserRouter>
       <Switch>
+        <Route path="/recibo/:vendaId" element={<PaginaRecibo />} />
         <Route element={<Layout />}>
           {/* --- Rotas Exclusivas para Gerente --- */}
           {isManager && (

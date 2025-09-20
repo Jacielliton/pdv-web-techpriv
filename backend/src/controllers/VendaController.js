@@ -53,6 +53,34 @@ class VendaController {
       return res.status(500).json({ error: 'Erro ao buscar histórico de vendas.', details: error.message });
     }
   }
+
+  async show(req, res) {
+    try {
+      const { id } = req.params;
+      const venda = await Venda.findByPk(id, {
+        include: [
+          // Inclui o nome do funcionário que fez a venda
+          { model: Funcionario, attributes: ['nome'] },
+          // Inclui os itens da venda
+          {
+            model: VendaItem,
+            attributes: ['quantidade', 'preco_unitario'],
+            // Para cada item, inclui o nome do produto
+            include: [{ model: Produto, attributes: ['nome'] }],
+          },
+        ],
+      });
+
+      if (!venda) {
+        return res.status(404).json({ error: 'Venda não encontrada.' });
+      }
+
+      return res.json(venda);
+    } catch (error) {
+      console.error("Erro ao buscar detalhes da venda:", error);
+      return res.status(500).json({ error: 'Erro interno ao buscar detalhes da venda.' });
+    }
+  }
   
   // Cadastrar uma nova venda
   async store(req, res) {

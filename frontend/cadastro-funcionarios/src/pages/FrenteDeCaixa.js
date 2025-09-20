@@ -1,7 +1,7 @@
 // pdv-web-techpriv\frontend\cadastro-funcionarios\src\pages\FrenteDeCaixa.js
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios'; // MANTENHA o axios global para a chamada de login
-import api from '../services/api'; // IMPORTE a nova instância configurada
+import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from '../contexts/auth';
 import ModalAberturaCaixa from '../components/ModalAberturaCaixa';
 import ModalMovimentacaoCaixa from '../components/ModalMovimentacaoCaixa';
@@ -9,16 +9,15 @@ import { toast } from 'react-toastify';
 import ManagerOverrideDialog from '../components/ManagerOverrideDialog';
 import ProdutoCard from '../components/ProdutoCard';
 import { 
-  Container, Typography, Grid, TextField, List, ListItem, ListItemButton, ListItemText,
+  Container, Typography, Grid, TextField, 
   Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Button, Select, MenuItem, FormControl, InputLabel, IconButton,
-  Box, CircularProgress, Stack 
+  Box, CircularProgress, Stack, Dialog, DialogTitle, DialogContent, DialogActions 
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-
 function FrenteDeCaixa() {
-  const { signOut, user, isManager, caixaStatus, loadingCaixa } = useAuth();
+  const { user, isManager, caixaStatus, loadingCaixa } = useAuth();
   const [todosProdutos, setTodosProdutos] = useState([]);
   const [termoBusca, setTermoBusca] = useState('');
   const [carrinho, setCarrinho] = useState([]);
@@ -32,42 +31,30 @@ function FrenteDeCaixa() {
   const [selectedDevice, setSelectedDevice] = useState('');
   const [pagamentoPendente, setPagamentoPendente] = useState(false);
   const [modalMovimentacaoOpen, setModalMovimentacaoOpen] = useState(false);
-  const [tipoMovimentacao, setTipoMovimentacao] = useState(''); // 'SANGRIA' ou 'SUPRIMENTO'
+  const [tipoMovimentacao, setTipoMovimentacao] = useState('');
+  const [vendaFinalizada, setVendaFinalizada] = useState(null);
 
-
-  // Busca a lista de produtos
-   useEffect(() => {
+  useEffect(() => {
     const fetchProdutos = async () => {
       try {
-        // A chamada continua a mesma, sem passar a página
         const response = await api.get('/produtos');
-        
-        // --- LÓGICA CORRIGIDA ---
-        // Verifica se a resposta é um objeto de paginação (tem a propriedade 'produtos')
-        // Se for, pega o array de dentro. Se não, usa a resposta inteira.
         const listaDeProdutos = response.data.produtos || response.data;
-
-        // Garante que estamos sempre salvando um array no estado
         if (Array.isArray(listaDeProdutos)) {
           setTodosProdutos(listaDeProdutos);
         } else {
-          console.error("A resposta da API de produtos não é um array:", response.data);
-          setTodosProdutos([]); // Define como array vazio em caso de formato inesperado
+          setTodosProdutos([]);
         }
-
       } catch (error) {
         toast.error('Erro ao carregar produtos.');
-        setTodosProdutos([]); // Garante que seja um array em caso de erro
+        setTodosProdutos([]);
       }
     };
     fetchProdutos();
   }, []);
 
-  // Busca os dispositivos PagSeguro
   useEffect(() => {
     const fetchDevices = async () => {
       try {
-        // ALTERADO: Usa a instância 'api' que envia o token
         const response = await api.get('/pagamento/pagseguro/devices');
         setDevices(response.data);
         if (response.data.length > 0) {
@@ -80,16 +67,14 @@ function FrenteDeCaixa() {
     fetchDevices();
   }, []);
 
-  
-
   const produtosFiltrados = useMemo(() => {
-    if (!termoBusca) return todosProdutos; // Se a busca está vazia, mostra todos
+    if (!termoBusca) return todosProdutos;
     return todosProdutos.filter(p =>
       p.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
       (p.codigo_barras && p.codigo_barras.includes(termoBusca))
     );
   }, [termoBusca, todosProdutos]);
-  
+
   const totalVenda = useMemo(() => {
     return carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
   }, [carrinho]);
@@ -103,29 +88,22 @@ function FrenteDeCaixa() {
     }
   }, [valorPago, totalVenda]);
 
-   const handleOpenMovimentacaoModal = (tipo) => {
+  const handleOpenMovimentacaoModal = (tipo) => {
     setTipoMovimentacao(tipo);
     setModalMovimentacaoOpen(true);
   };
-  
+
   const handleCloseMovimentacaoModal = () => {
     setModalMovimentacaoOpen(false);
   };
 
-  const adicionarAoCarrinho = (produto) => {       
-    // 1. Verifica se o produto já está no carrinho para saber a quantidade atual
+  const adicionarAoCarrinho = (produto) => {
     const itemExistente = carrinho.find(item => item.id === produto.id);
     const quantidadeAtualNoCarrinho = itemExistente ? itemExistente.quantidade : 0;
-
-    // 2. A NOVA VALIDAÇÃO:
-    // Verifica se a quantidade que o usuário TENTARÁ colocar (a atual + 1) ultrapassa o estoque.
     if ((quantidadeAtualNoCarrinho + 1) > produto.quantidade_estoque) {
       toast.error(`Estoque insuficiente para "${produto.nome}". Disponível: ${produto.quantidade_estoque}`);
-      return; // Interrompe a função e não adiciona o produto
+      return;
     }
-    // --- FIM DA LÓGICA DE VALIDAÇÃO ---
-
-    // Se a validação passar, o código antigo para adicionar ao carrinho continua normalmente
     setCarrinho(carrinhoAtual => {
       const produtoExistente = carrinhoAtual.find(item => item.id === produto.id);
       if (produtoExistente) {
@@ -137,7 +115,6 @@ function FrenteDeCaixa() {
     });
     setTermoBusca('');
   };
-  
 
   const removerDoCarrinho = (produtoId) => {
     if (isManager) {
@@ -152,9 +129,7 @@ function FrenteDeCaixa() {
 
   const handleManagerAuthorize = async (email, senha) => {
     try {
-      // MANTIDO: 'axios' global é o correto aqui, pois a rota de login é pública
       const response = await axios.post('http://localhost:3333/api/login', { email, senha });
-
       if (response.data.funcionario && response.data.funcionario.cargo === 'gerente') {
         toast.success('Autorização concedida!');
         setCarrinho(carrinhoAtual => carrinhoAtual.filter(item => item.id !== itemParaRemover));
@@ -168,13 +143,12 @@ function FrenteDeCaixa() {
       setOverrideError('E-mail ou senha de gerente inválidos.');
     }
   };
-  
+
   const finalizarVenda = async () => {
     if (carrinho.length === 0) {
       toast.error('Adicione pelo menos um item à venda.');
       return;
     }
-
     const registrarVendaNoSistema = async (metodo) => {
       const payload = {
         valor_total: totalVenda,
@@ -182,13 +156,19 @@ function FrenteDeCaixa() {
         itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
       };
       try {
-        // ALTERADO: Usa a instância 'api' que envia o token
-        await api.post('/vendas', payload);
-        toast.success('Venda registrada no sistema com sucesso!');
+        const response = await api.post('/vendas', payload);
+        toast.success('Venda registrada com sucesso!');
+        const novaVendaId = response.data.venda?.id;
+        if (novaVendaId) {
+          const responseDetalhada = await api.get(`/vendas/${novaVendaId}`);
+          setVendaFinalizada(responseDetalhada.data);
+        } else {
+          toast.error("Ocorreu um erro ao processar a venda.");
+        }
         setCarrinho([]);
         setValorPago('');
       } catch (error) {
-        toast.error(error.response?.data?.error || 'Erro ao registrar a venda no sistema.');
+        toast.error(error.response?.data?.error || 'Erro crítico ao registrar a venda.');
       }
     };
 
@@ -222,19 +202,21 @@ function FrenteDeCaixa() {
     }
   };
 
+ 
+  const handleNovaVenda = () => {
+    setVendaFinalizada(null);
+  };
+
   const handleQuantidadeChange = (produtoId, novaQuantidade) => {
     const qtd = parseInt(novaQuantidade, 10);
     const produtoOriginal = todosProdutos.find(p => p.id === produtoId);
-    
     if (isNaN(qtd) || qtd < 1) return;
-
     if (produtoOriginal && qtd > produtoOriginal.quantidade_estoque) {
       toast.error(`Estoque máximo para ${produtoOriginal.nome} é ${produtoOriginal.quantidade_estoque}.`);
       return;
     }
-
-    setCarrinho(carrinhoAtual => 
-      carrinhoAtual.map(item => 
+    setCarrinho(carrinhoAtual =>
+      carrinhoAtual.map(item =>
         item.id === produtoId ? { ...item, quantidade: qtd } : item
       )
     );
@@ -243,8 +225,7 @@ function FrenteDeCaixa() {
   if (loadingCaixa) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Verificando status do caixa...</Typography>
+        <CircularProgress /><Typography sx={{ ml: 2 }}>Verificando status do caixa...</Typography>
       </Box>
     );
   }
@@ -252,7 +233,6 @@ function FrenteDeCaixa() {
   if (caixaStatus === 'FECHADO') {
     return <ModalAberturaCaixa open={true} />;
   }
-  
 
   return (
     <Container maxWidth="xl"> {/* Usamos 'xl' para mais espaço */}
@@ -431,6 +411,30 @@ function FrenteDeCaixa() {
         onClose={handleCloseMovimentacaoModal}
         tipo={tipoMovimentacao}
       />
+      
+      {/* MODAL DE SUCESSO DA VENDA */}
+      <Dialog open={!!vendaFinalizada} onClose={handleNovaVenda}>
+        <DialogTitle>Venda Finalizada com Sucesso!</DialogTitle>
+        <DialogContent>
+          <Typography>Venda ID: {vendaFinalizada?.id}</Typography>
+          <Typography variant="h5" sx={{ mt: 2 }}>
+            Total: R$ {Number(vendaFinalizada?.valor_total).toFixed(2)}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleNovaVenda}>Nova Venda</Button>
+          <Button 
+            onClick={() => {
+              window.open(`/recibo/${vendaFinalizada.id}`, '_blank');
+              handleNovaVenda();
+            }} 
+            variant="contained" 
+            autoFocus
+          >
+            Imprimir Recibo
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }
