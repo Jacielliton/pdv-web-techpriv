@@ -98,22 +98,39 @@ class CaixaController {
   }
 
   async getHistorico(req, res) {
-    const { page = 1 } = req.query;
-    const limit = 10;
-    const offset = limit * (page - 1);
+    const { page = 1, limit = 10, dataInicio, dataFim, funcionarioId } = req.query;
+    const offset = parseInt(limit, 10) * (parseInt(page, 10) - 1);
+
+    // --- LÓGICA DE FILTRO DINÂMICO ---
+    const whereClause = {
+      status: 'FECHADO', // Sempre busca apenas os caixas fechados
+    };
+
+    if (funcionarioId) {
+      whereClause.funcionario_id = funcionarioId;
+    }
+    if (dataInicio && dataFim) {
+      const dataFimAjustada = new Date(dataFim);
+      dataFimAjustada.setHours(23, 59, 59, 999);
+      // O filtro de data é no campo 'data_fechamento'
+      whereClause.data_fechamento = { [Op.between]: [new Date(dataInicio), dataFimAjustada] };
+    }
+    // --- FIM DA LÓGICA DE FILTRO ---
 
     try {
       const { count, rows: historico } = await Caixa.findAndCountAll({
-        where: { status: 'FECHADO' },
+        where: whereClause,
         order: [['data_fechamento', 'DESC']],
         include: [{ model: Funcionario, attributes: ['nome'] }],
-        limit,
+        limit: parseInt(limit, 10),
         offset,
+        distinct: true,
       });
       
-      const totalPages = Math.ceil(count / limit);
+      const totalPages = Math.ceil(count / parseInt(limit, 10));
       return res.json({ historico, totalPages, currentPage: parseInt(page, 10) });
     } catch (error) {
+      console.error("Erro ao buscar histórico de caixas:", error);
       return res.status(500).json({ error: 'Erro ao buscar histórico de caixas.', details: error.message });
     }
   }
