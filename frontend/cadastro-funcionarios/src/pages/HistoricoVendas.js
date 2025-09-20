@@ -1,9 +1,12 @@
 // src/pages/HistoricoVendas.js
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import Recibo from '../components/Recibo';
-import { useReactToPrint } from 'react-to-print';
-import { Container, Typography, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemText, Grid, Box, CircularProgress, IconButton, Pagination } from '@mui/material';
+import PrintController from '../components/PrintController'; // 1. Importa o novo controller
+import { 
+  Container, Typography, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemText, 
+  Grid, Box, CircularProgress, IconButton, Pagination, Paper, TextField, Button, 
+  Select, MenuItem, FormControl, InputLabel 
+} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PrintIcon from '@mui/icons-material/Print';
 import { toast } from 'react-toastify';
@@ -11,54 +14,56 @@ import { toast } from 'react-toastify';
 function HistoricoVendas() {
   const [vendas, setVendas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // 2. Lógica de impressão simplificada
   const [vendaParaImprimir, setVendaParaImprimir] = useState(null);
-  const reciboRef = useRef();
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
-  // 1. ADICIONE O ESTADO PARA O ERRO
-  const [error, setError] = useState(null);
+  const [filtros, setFiltros] = useState({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '' });
+  const [filtrosAtivos, setFiltrosAtivos] = useState({});
 
   useEffect(() => {
-    const fetchHistorico = async (currentPage) => {
+    const fetchHistorico = async () => {
       setLoading(true);
-      setError(null); // Limpa erros antigos antes de uma nova busca
+      setError(null);
       try {
-        const response = await api.get('/vendas', { params: { page: currentPage } });
+        const response = await api.get('/vendas', { params: { page, ...filtrosAtivos } });
         setVendas(response.data.vendas);
         setTotalPages(response.data.totalPages);
       } catch (err) {
         toast.error("Não foi possível carregar o histórico.");
-        // 2. ATUALIZE O ESTADO DE ERRO QUANDO A BUSCA FALHAR
         setError("Ocorreu um erro ao buscar os dados.");
       } finally {
         setLoading(false);
       }
     };
-    fetchHistorico(page);
-  }, [page]);
-  
-  const handlePrint = useReactToPrint({
-    content: () => reciboRef.current,
-    onAfterPrint: () => setVendaParaImprimir(null)
-  });
+    fetchHistorico();
+  }, [page, filtrosAtivos]);
 
-  const prepararImpressao = (venda) => {
+  // 3. A função de impressão agora apenas define qual venda deve ser impressa
+  const handleImprimir = (venda) => {
     setVendaParaImprimir(venda);
   };
-  
-  useEffect(() => {
-    if (vendaParaImprimir) {
-      handlePrint();
-    }
-  }, [vendaParaImprimir, handlePrint]);
 
-
-  const handlePageChange = (event, value) => {
-    setPage(value);
+  const handleFiltroChange = (e) => {
+    setFiltros({ ...filtros, [e.target.name]: e.target.value });
   };
 
+  const handleAplicarFiltros = () => {
+    setPage(1); // Volta para a primeira página ao aplicar um novo filtro
+    setFiltrosAtivos(filtros);
+  };
+
+  const handleLimparFiltros = () => {
+    setPage(1);
+    setFiltros({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '' });
+    setFiltrosAtivos({});
+  };
+
+  const handlePageChange = (event, value) => { setPage(value); };
+ 
   if (loading) return ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box> );
   
   // Agora a variável 'error' existe e esta linha funcionará
@@ -66,19 +71,54 @@ function HistoricoVendas() {
 
   return (
     <Container maxWidth="md">
-      <Typography variant="h4" component="h1" gutterBottom>
-        Histórico de Vendas
-      </Typography>
-      {vendas.map(venda => (
+      <Typography variant="h4" component="h1" gutterBottom>Histórico de Vendas</Typography>
+
+      {/* --- PAINEL DE FILTROS --- */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={4}>
+            <TextField name="vendaId" label="Buscar por ID da Venda" value={filtros.vendaId} onChange={handleFiltroChange} fullWidth size="small" />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField name="dataInicio" label="Data Início" type="date" value={filtros.dataInicio} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <TextField name="dataFim" label="Data Fim" type="date" value={filtros.dataFim} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+             <FormControl fullWidth size="small">
+              <InputLabel>Método Pagto.</InputLabel>
+              <Select name="metodoPagamento" value={filtros.metodoPagamento} label="Método Pagto." onChange={handleFiltroChange}>
+                <MenuItem value=""><em>Todos</em></MenuItem>
+                <MenuItem value="Dinheiro">Dinheiro</MenuItem>
+                <MenuItem value="Pix">Pix</MenuItem>
+                <MenuItem value="Cartão (PagSeguro)">Cartão (PagSeguro)</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Filtrar</Button>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <Button variant="outlined" onClick={handleLimparFiltros} fullWidth>Limpar Filtros</Button>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {loading && ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box> )}
+      {!loading && error && <Typography color="error">{error}</Typography>}
+      {!loading && !error && vendas.length === 0 && <Typography>Nenhuma venda encontrada para os filtros selecionados.</Typography>}
+      
+      {!loading && !error && vendas.map(venda => (
         <Accordion key={venda.id}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={6}>
+            <Grid container alignItems="center">
+              <Grid item xs={8}>
                 <Typography><strong>Venda #{venda.id}</strong> - {new Date(venda.data_venda).toLocaleString('pt-BR')}</Typography>
               </Grid>
-              <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                <Typography>Total: <strong>R$ {Number(venda.valor_total).toFixed(2)}</strong></Typography>
-                <IconButton onClick={(e) => { e.stopPropagation(); prepararImpressao(venda); }} color="primary" sx={{ ml: 2 }}>
+              <Grid item xs={4} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Typography><strong>R$ {Number(venda.valor_total).toFixed(2)}</strong></Typography>
+                <IconButton onClick={(e) => { e.stopPropagation(); handleImprimir(venda); }} color="primary">
                   <PrintIcon />
                 </IconButton>
               </Grid>
@@ -103,10 +143,20 @@ function HistoricoVendas() {
             </AccordionDetails>
         </Accordion>
       ))}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-        <Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" />
-      </Box>
-      <div style={{ display: 'none' }}><Recibo ref={reciboRef} venda={vendaParaImprimir} /></div>
+
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" />
+        </Box>
+      )}
+
+      {/* 4. O PrintController é renderizado aqui quando uma venda é selecionada para impressão */}
+      {vendaParaImprimir && (
+        <PrintController 
+          venda={vendaParaImprimir}
+          onPrintFinished={() => setVendaParaImprimir(null)} // Limpa o estado após a impressão
+        />
+      )}
     </Container>
   );
 }

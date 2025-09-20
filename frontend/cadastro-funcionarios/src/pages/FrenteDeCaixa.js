@@ -1,24 +1,27 @@
-// pdv-web-techpriv\frontend\cadastro-funcionarios\src\pages\FrenteDeCaixa.js
-import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios'; // MANTENHA o axios global para a chamada de login
-import api from '../services/api'; // IMPORTE a nova instância configurada
+// pdv-web-techpriv\frontend\cadastro-funcionarios\src\pages\FrenteDeCaixa.js (VERSÃO FINAL)
+import React, { useState, useEffect, useMemo, useRef } from 'react'; 
+import api from '../services/api';
+import axios from 'axios';
 import { useAuth } from '../contexts/auth';
+import { toast } from 'react-toastify';
+import { useReactToPrint } from 'react-to-print';
+
+// Components
 import ModalAberturaCaixa from '../components/ModalAberturaCaixa';
 import ModalMovimentacaoCaixa from '../components/ModalMovimentacaoCaixa';
-import { toast } from 'react-toastify';
 import ManagerOverrideDialog from '../components/ManagerOverrideDialog';
 import ProdutoCard from '../components/ProdutoCard';
-import { 
-  Container, Typography, Grid, TextField, List, ListItem, ListItemButton, ListItemText,
-  Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Button, Select, MenuItem, FormControl, InputLabel, IconButton,
-  Box, CircularProgress, Stack 
+import ModalVendaFinalizada from '../components/ModalVendaFinalizada';
+import PrintController from '../components/PrintController'; // 1. IMPORTE O NOVO CONTROLLER
+import {
+  Container, Typography, Grid, TextField, Paper, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Button, Select, MenuItem, FormControl,
+  InputLabel, IconButton, Box, CircularProgress, Stack
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-
 function FrenteDeCaixa() {
-  const { signOut, user, isManager, caixaStatus, loadingCaixa } = useAuth();
+  const { user, isManager, caixaStatus, loadingCaixa } = useAuth();
   const [todosProdutos, setTodosProdutos] = useState([]);
   const [termoBusca, setTermoBusca] = useState('');
   const [carrinho, setCarrinho] = useState([]);
@@ -28,36 +31,48 @@ function FrenteDeCaixa() {
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [itemParaRemover, setItemParaRemover] = useState(null);
   const [overrideError, setOverrideError] = useState('');
-  const [devices, setDevices] = useState([]);
-  const [selectedDevice, setSelectedDevice] = useState('');
   const [pagamentoPendente, setPagamentoPendente] = useState(false);
   const [modalMovimentacaoOpen, setModalMovimentacaoOpen] = useState(false);
-  const [tipoMovimentacao, setTipoMovimentacao] = useState(''); // 'SANGRIA' ou 'SUPRIMENTO'
+  const [tipoMovimentacao, setTipoMovimentacao] = useState('');
+  const [vendaFinalizada, setVendaFinalizada] = useState(null);
+  const [modalVendaOpen, setModalVendaOpen] = useState(false);
+  const reciboRef = useRef();
+  const [devices, setDevices] = useState([]);
+  const [selectedDevice, setSelectedDevice] = useState('');
+  const [imprimindo, setImprimindo] = useState(false);
 
+  // --- LÓGICA DE IMPRESSÃO CORRETA E DEFINITIVA ---
+  const [gatilhoImpressao, setGatilhoImpressao] = useState(false);
 
+  const handlePrint = useReactToPrint({
+    content: () => reciboRef.current,
+    onAfterPrint: () => setGatilhoImpressao(false), // Desarma o gatilho após imprimir
+  });
+
+  // useEffect "escuta" a mudança no gatilho. Ele só roda APÓS a renderização.
+  useEffect(() => {
+    if (gatilhoImpressao) {
+      handlePrint();
+    }
+  }, [gatilhoImpressao, handlePrint]);
+  
+  
+  // --- FIM DA LÓGICA DE IMPRESSÃO ---
+  
   // Busca a lista de produtos
-   useEffect(() => {
+  useEffect(() => {
     const fetchProdutos = async () => {
       try {
-        // A chamada continua a mesma, sem passar a página
         const response = await api.get('/produtos');
-        
-        // --- LÓGICA CORRIGIDA ---
-        // Verifica se a resposta é um objeto de paginação (tem a propriedade 'produtos')
-        // Se for, pega o array de dentro. Se não, usa a resposta inteira.
         const listaDeProdutos = response.data.produtos || response.data;
-
-        // Garante que estamos sempre salvando um array no estado
         if (Array.isArray(listaDeProdutos)) {
           setTodosProdutos(listaDeProdutos);
         } else {
-          console.error("A resposta da API de produtos não é um array:", response.data);
-          setTodosProdutos([]); // Define como array vazio em caso de formato inesperado
+          setTodosProdutos([]);
         }
-
       } catch (error) {
         toast.error('Erro ao carregar produtos.');
-        setTodosProdutos([]); // Garante que seja um array em caso de erro
+        setTodosProdutos([]);
       }
     };
     fetchProdutos();
@@ -67,7 +82,6 @@ function FrenteDeCaixa() {
   useEffect(() => {
     const fetchDevices = async () => {
       try {
-        // ALTERADO: Usa a instância 'api' que envia o token
         const response = await api.get('/pagamento/pagseguro/devices');
         setDevices(response.data);
         if (response.data.length > 0) {
@@ -80,29 +94,63 @@ function FrenteDeCaixa() {
     fetchDevices();
   }, []);
 
-  
-
-  const produtosFiltrados = useMemo(() => {
-    if (!termoBusca) return todosProdutos; // Se a busca está vazia, mostra todos
-    return todosProdutos.filter(p =>
-      p.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-      (p.codigo_barras && p.codigo_barras.includes(termoBusca))
-    );
-  }, [termoBusca, todosProdutos]);
-  
+  // --- CORREÇÃO DE ORDEM DOS HOOKS ---
+  // A declaração de 'totalVenda' agora vem ANTES do 'useEffect' que a utiliza.
   const totalVenda = useMemo(() => {
     return carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
   }, [carrinho]);
 
   useEffect(() => {
     const valorPagoFloat = parseFloat(valorPago);
-    if (!isNaN(valorPagoFloat) && valorPagoFloat >= totalVenda) {
-      setTroco(valorPagoFloat - totalVenda);
+    const totalVendaFloat = parseFloat(totalVenda);
+    if (!isNaN(valorPagoFloat) && valorPagoFloat >= totalVendaFloat) {
+      setTroco(valorPagoFloat - totalVendaFloat);
     } else {
       setTroco(0);
     }
   }, [valorPago, totalVenda]);
+  // --- FIM DA CORREÇÃO DE ORDEM ---
 
+  const produtosFiltrados = useMemo(() => {
+    if (!termoBusca) return todosProdutos;
+    return todosProdutos.filter(p =>
+      p.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      (p.codigo_barras && p.codigo_barras.includes(termoBusca))
+    );
+  }, [termoBusca, todosProdutos]);
+  
+  const finalizarVenda = async () => {
+    if (carrinho.length === 0) return toast.error('Adicione pelo menos um item à venda.');
+    setPagamentoPendente(true);
+    const payload = {
+      valor_total: totalVenda,
+      metodo_pagamento: metodoPagamento,
+      itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
+    };
+    try {
+      const response = await api.post('/vendas', payload);
+      setVendaFinalizada(response.data);
+      setModalVendaOpen(true);
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erro ao registrar a venda.');
+    } finally {
+      setPagamentoPendente(false);
+    }
+  };
+
+  const handleNovaVenda = () => {
+    setCarrinho([]);
+    setValorPago('');
+    setVendaFinalizada(null);
+    setModalVendaOpen(false);
+  };
+  
+  // O botão do modal agora apenas ativa o estado 'imprimindo'
+  const handleImprimirRecibo = () => {
+    setImprimindo(true);
+  };
+  
+   
    const handleOpenMovimentacaoModal = (tipo) => {
     setTipoMovimentacao(tipo);
     setModalMovimentacaoOpen(true);
@@ -169,59 +217,7 @@ function FrenteDeCaixa() {
     }
   };
   
-  const finalizarVenda = async () => {
-    if (carrinho.length === 0) {
-      toast.error('Adicione pelo menos um item à venda.');
-      return;
-    }
-
-    const registrarVendaNoSistema = async (metodo) => {
-      const payload = {
-        valor_total: totalVenda,
-        metodo_pagamento: metodo,
-        itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
-      };
-      try {
-        // ALTERADO: Usa a instância 'api' que envia o token
-        await api.post('/vendas', payload);
-        toast.success('Venda registrada no sistema com sucesso!');
-        setCarrinho([]);
-        setValorPago('');
-      } catch (error) {
-        toast.error(error.response?.data?.error || 'Erro ao registrar a venda no sistema.');
-      }
-    };
-
-    if (metodoPagamento === 'Cartão (PagSeguro)') {
-      if (!selectedDevice) {
-        toast.error('Nenhum dispositivo (Tap on Phone) selecionado ou disponível.');
-        return;
-      }
-      setPagamentoPendente(true);
-      toast.info('Enviando cobrança para o dispositivo...');
-      
-      const payload = {
-        valor_total: totalVenda,
-        itens: carrinho.map(item => ({ nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
-        device_id: selectedDevice,
-      };
-
-      try {
-        // ALTERADO: Usa a instância 'api' que envia o token
-        await api.post('/pagamento/pagseguro/order', payload);
-        toast.success('Cobrança enviada! Aguarde o pagamento do cliente no celular.');
-        setCarrinho([]);
-        setValorPago('');
-      } catch (error) {
-        toast.error('Erro ao enviar cobrança para o dispositivo.');
-      } finally {
-        setPagamentoPendente(false);
-      }
-    } else {
-      await registrarVendaNoSistema(metodoPagamento);
-    }
-  };
-
+  
   const handleQuantidadeChange = (produtoId, novaQuantidade) => {
     const qtd = parseInt(novaQuantidade, 10);
     const produtoOriginal = todosProdutos.find(p => p.id === produtoId);
@@ -431,7 +427,22 @@ function FrenteDeCaixa() {
         onClose={handleCloseMovimentacaoModal}
         tipo={tipoMovimentacao}
       />
+
+      <ModalVendaFinalizada
+        open={modalVendaOpen}
+        onNovaVenda={handleNovaVenda}
+        onImprimirRecibo={handleImprimirRecibo}
+      />
+      
+      {/* O PrintController só é renderizado quando 'imprimindo' for true */}
+      {imprimindo && (
+        <PrintController 
+          venda={vendaFinalizada} 
+          onPrintFinished={() => setImprimindo(false)} // Desmonta o controller após imprimir
+        />
+      )}
     </Container>
+
   );
 }
 
