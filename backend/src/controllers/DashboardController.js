@@ -1,3 +1,4 @@
+// pdv-web-techpriv\backend\src\controllers\DashboardController.js (VERSÃO CORRIGIDA)
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const Venda = require('../models/Venda');
@@ -5,12 +6,10 @@ const VendaItem = require('../models/VendaItem');
 const Produto = require('../models/Produto');
 
 class DashboardController {
-  // Método para buscar os dados resumidos do dashboard
   async getSummary(req, res) {
     try {
-      // --- 1. Calcular Vendas do Dia ---
       const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0); // Define a hora para o início do dia
+      hoje.setHours(0, 0, 0, 0);
 
       const dadosVendasHoje = await Venda.findOne({
         attributes: [
@@ -19,13 +18,12 @@ class DashboardController {
         ],
         where: {
           data_venda: {
-            [Op.gte]: hoje, // Op.gte significa "maior ou igual a" (greater than or equal)
+            [Op.gte]: hoje,
           },
         },
-        raw: true, // Retorna um objeto JSON simples
+        raw: true,
       });
 
-      // --- 2. Calcular Produtos Mais Vendidos (Top 5) ---
       const produtosMaisVendidos = await VendaItem.findAll({
         attributes: [
           'produto_id',
@@ -33,23 +31,29 @@ class DashboardController {
         ],
         include: [{
           model: Produto,
-          attributes: ['nome'], // Pega o nome do produto
+          attributes: ['nome'],
         }],
-        group: ['produto_id', 'Produto.id'], // Agrupa pela ID do produto
-        order: [[sequelize.col('total_vendido'), 'DESC']], // Ordena pelo total vendido
-        limit: 5, // Limita aos 5 primeiros
-        raw: true, // Retorna um objeto JSON simples
+        group: ['produto_id', 'Produto.id'],
+        order: [[sequelize.col('total_vendido'), 'DESC']],
+        limit: 5,
+        raw: true,
       });
 
-      // Formata os dados para facilitar o uso no frontend
       const topProdutos = produtosMaisVendidos.map(p => ({
         nome: p['Produto.nome'],
         total_vendido: p.total_vendido,
       }));
 
+      // --- CÁLCULO DO TICKET MÉDIO ADICIONADO AQUI ---
+      const totalVendido = parseFloat(dadosVendasHoje.totalVendidoHoje) || 0;
+      const numeroDeVendas = parseInt(dadosVendasHoje.numeroDeVendasHoje, 10) || 0;
+      const ticketMedioHoje = numeroDeVendas > 0 ? totalVendido / numeroDeVendas : 0;
+      // ------------------------------------------------
+
       const resumo = {
-        totalVendidoHoje: parseFloat(dadosVendasHoje.totalVendidoHoje) || 0,
-        numeroDeVendasHoje: parseInt(dadosVendasHoje.numeroDeVendasHoje, 10) || 0,
+        totalVendidoHoje: totalVendido,
+        numeroDeVendasHoje: numeroDeVendas,
+        ticketMedioHoje: ticketMedioHoje, // <-- NOVO CAMPO ADICIONADO À RESPOSTA
         topProdutos: topProdutos,
       };
 
@@ -58,13 +62,14 @@ class DashboardController {
       return res.status(500).json({ error: 'Erro ao buscar dados do dashboard.', details: error.message });
     }
   }
+
+  // A função getVendasSemanais permanece a mesma
   async getVendasSemanais(req, res) {
     try {
       const seteDiasAtras = new Date();
       seteDiasAtras.setDate(seteDiasAtras.getDate() - 6);
       seteDiasAtras.setHours(0, 0, 0, 0);
 
-      // 1. Busca os totais de vendas agrupados por dia
       const vendasPorDia = await Venda.findAll({
         attributes: [
           [sequelize.fn('DATE', sequelize.col('data_venda')), 'dia'],
@@ -80,7 +85,6 @@ class DashboardController {
         raw: true,
       });
 
-      // 2. Prepara os dados para o frontend, preenchendo dias sem vendas com zero
       const dadosGrafico = [];
       const mapaVendas = new Map(vendasPorDia.map(v => [new Date(v.dia).toISOString().split('T')[0], parseFloat(v.total)]));
 

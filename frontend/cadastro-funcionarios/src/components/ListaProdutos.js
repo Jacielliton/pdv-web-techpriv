@@ -1,59 +1,66 @@
-// src/components/ListaProdutos.js (VERSÃO COM MUI)
+// src/components/ListaProdutos.js (VERSÃO FINAL CORRIGIDA)
 import React from 'react';
-import axios from 'axios';
-// Importando componentes de Tabela e Ícones do MUI
-import { 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
-  IconButton, Typography 
-} from '@mui/material';
+import { Box, IconButton, Tooltip } from '@mui/material';
+// CORREÇÃO: Removemos a importação de ptBR
+import { DataGrid } from '@mui/x-data-grid'; 
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-// O resto da lógica do componente (useState, useEffect, fetchProdutos) continua a mesma
-const ListaProdutos = ({ onEdit, onDeleteRequest, produtos, loading }) => {
+// NOVO: Objeto de tradução customizado
+const customLocaleText = {
+  noRowsLabel: 'Nenhum resultado encontrado',
+  footerRowSelected: (count) => `${count.toLocaleString()} linha(s) selecionada(s)`,
+  // Adicione outras traduções aqui se necessário
+};
 
-  
-  if (loading) return <p>Carregando produtos...</p>;
+const ListaProdutos = ({ onEdit, onDeleteRequest, produtos, loading }) => {
+  const columns = [
+    { field: 'id', headerName: 'ID', width: 90 },
+    { field: 'nome', headerName: 'Nome', flex: 1, minWidth: 200 },
+    { 
+      field: 'preco', 
+      headerName: 'Preço', 
+      width: 130,
+      renderCell: (params) => `R$ ${Number(params.value).toFixed(2)}`
+    },
+    { field: 'quantidade_estoque', headerName: 'Estoque', width: 130 },
+    { field: 'codigo_barras', headerName: 'Cód. Barras', flex: 1, minWidth: 150,
+      renderCell: (params) => params.value || 'N/A'
+    },
+    {
+      field: 'actions',
+      headerName: 'Ações',
+      width: 120,
+      align: 'center',
+      headerAlign: 'center',
+      sortable: false,
+      renderCell: (params) => (
+        <Box>
+          <Tooltip title="Editar"><IconButton onClick={() => onEdit(params.row)} color="primary"><EditIcon /></IconButton></Tooltip>
+          <Tooltip title="Excluir"><IconButton onClick={() => onDeleteRequest(params.row.id)} color="error"><DeleteIcon /></IconButton></Tooltip>
+        </Box>
+      ),
+    },
+  ];
 
   return (
-    // TableContainer com Paper dá um fundo branco e elevação para a tabela
-    <TableContainer component={Paper} sx={{ marginTop: 4 }}>
-      <Typography variant="h6" component="div" sx={{ padding: '16px' }}>
-        Produtos Cadastrados
-      </Typography>
-      <Table sx={{ minWidth: 650 }} aria-label="tabela de produtos">
-        <TableHead>
-          <TableRow>
-            <TableCell>ID</TableCell>
-            <TableCell>Nome</TableCell>
-            <TableCell>Preço</TableCell>
-            <TableCell>Estoque</TableCell>
-            <TableCell>Cód. Barras</TableCell>
-            <TableCell align="right">Ações</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {produtos.map((prod) => (
-            <TableRow key={prod.id}>
-              <TableCell>{prod.id}</TableCell>
-              <TableCell>{prod.nome}</TableCell>
-              <TableCell>R$ {Number(prod.preco).toFixed(2)}</TableCell>
-              <TableCell>{prod.quantidade_estoque}</TableCell>
-              <TableCell>{prod.codigo_barras || 'N/A'}</TableCell>
-              <TableCell align="right">
-                <IconButton onClick={() => onEdit(prod)} color="primary">
-                  <EditIcon />
-                </IconButton>
-                {/* Chame a nova função onDeleteRequest, passando o ID */}
-                <IconButton onClick={() => onDeleteRequest(prod.id)} color="error">
-                  <DeleteIcon />
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+    <Box sx={{ height: 500, width: '100%' }}>
+      <DataGrid
+        rows={produtos}
+        columns={columns}
+        pageSize={10} // Aumentado para 10 para melhor visualização
+        rowsPerPageOptions={[10]}
+        loading={loading}
+        // CORREÇÃO: Usamos nosso objeto de tradução customizado
+        localeText={customLocaleText} 
+        sx={{
+          border: 'none',
+          '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+            outline: 'none',
+          },
+        }}
+      />
+    </Box>
   );
 };
 

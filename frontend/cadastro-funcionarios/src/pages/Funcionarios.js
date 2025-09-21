@@ -1,12 +1,11 @@
-// src/pages/Funcionarios.js
-
+// src/pages/Funcionarios.js (VERSÃO COM NOVO DESIGN)
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import FuncionarioForm from '../components/FuncionarioForm';
 import ListaFuncionarios from '../components/ListaFuncionarios';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from 'react-toastify';
-import { Container, Typography, Box, Pagination } from '@mui/material';
+import { Container, Typography, Box, Pagination, Paper, Divider } from '@mui/material';
 
 function Funcionarios() {
   const [funcionarios, setFuncionarios] = useState([]);
@@ -17,12 +16,13 @@ function Funcionarios() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchFuncionarios = async (currentPage) => {
+  const fetchFuncionarios = async (currentPage = 1) => {
     setLoading(true);
     try {
       const response = await api.get('/funcionarios', { params: { page: currentPage } });
       setFuncionarios(response.data.funcionarios);
       setTotalPages(response.data.totalPages);
+      setPage(currentPage);
     } catch (err) {
       toast.error('Falha ao carregar funcionários.');
     } finally {
@@ -35,7 +35,9 @@ function Funcionarios() {
   }, [page]);
 
   const handleSuccess = () => {
-    fetchFuncionarios();
+    // Se estava editando, mantém a página. Se cadastrou um novo, vai para a primeira página.
+    const pageToFetch = funcionarioParaEditar ? page : 1;
+    fetchFuncionarios(pageToFetch);
     setFuncionarioParaEditar(null);
   };
 
@@ -43,6 +45,7 @@ function Funcionarios() {
 
   const handleEdit = (funcionario) => {
     setFuncionarioParaEditar(funcionario);
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Rola para o topo para ver o form
   };
   
   const handleCancelEdit = () => {
@@ -56,10 +59,10 @@ function Funcionarios() {
 
   const handleConfirmDelete = async () => {
     try {
-      // ALTERADO: Usa 'api' e a URL relativa
       await api.delete(`/funcionarios/${funcionarioParaDeletar}`);
       toast.success('Funcionário excluído com sucesso!');
-      fetchFuncionarios();
+      // Recarrega os funcionários da página atual
+      fetchFuncionarios(page);
     } catch (err) {
       toast.error('Erro ao excluir funcionário.');
     } finally {
@@ -73,19 +76,23 @@ function Funcionarios() {
       <Typography variant="h4" component="h1" gutterBottom>
         Gerenciamento de Funcionários
       </Typography>
-      <FuncionarioForm 
-        onCadastroSucesso={handleSuccess}
-        funcionarioParaEditar={funcionarioParaEditar}
-        limparEdicao={handleCancelEdit}
-      />
-      <ListaFuncionarios 
-        onEdit={handleEdit}
-        onDeleteRequest={handleDeleteRequest}
-        funcionarios={funcionarios}
-        loading={loading}
-      />
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+      <Paper elevation={3} sx={{ mb: 4 }}>
+        <FuncionarioForm 
+          onCadastroSucesso={handleSuccess}
+          funcionarioParaEditar={funcionarioParaEditar}
+          limparEdicao={handleCancelEdit}
+        />
+        <Divider />
+        <ListaFuncionarios 
+          onEdit={handleEdit}
+          onDeleteRequest={handleDeleteRequest}
+          funcionarios={funcionarios}
+          loading={loading}
+        />
+      </Paper>
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
         <Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" />
       </Box>
       

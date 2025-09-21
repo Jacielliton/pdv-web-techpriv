@@ -1,12 +1,11 @@
-// src/pages/Produtos.js
-
+// src/pages/Produtos.js (VERSÃO COM NOVO DESIGN)
 import React, { useState, useEffect } from 'react';
-import api from '../services/api'; // ALTERADO: Importa a instância 'api'
+import api from '../services/api';
 import ProdutoForm from '../components/ProdutoForm';
 import ListaProdutos from '../components/ListaProdutos';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from 'react-toastify';
-import { Container, Typography, Box, Pagination } from '@mui/material';
+import { Container, Typography, Box, Pagination, Paper, Divider } from '@mui/material';
 
 
 function Produtos() {
@@ -19,15 +18,15 @@ function Produtos() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchProdutos = async (currentPage) => {
+  const fetchProdutos = async (currentPage = 1) => {
     setLoading(true);
     try {
-      // Passa o número da página como parâmetro para a API
       const response = await api.get('/produtos', {
         params: { page: currentPage }
       });
       setProdutos(response.data.produtos);
-      setTotalPages(response.data.totalPages); // Armazena o total de páginas
+      setTotalPages(response.data.totalPages);
+      setPage(currentPage);
     } catch (err) {
       toast.error('Falha ao carregar produtos.');
     } finally {
@@ -40,7 +39,8 @@ function Produtos() {
   }, [page]);
 
   const handleSuccess = () => {
-    fetchProdutos(page); // Recarrega a página atual após um sucesso
+    const pageToFetch = produtoParaEditar ? page : 1;
+    fetchProdutos(pageToFetch);
     setProdutoParaEditar(null);
   };
 
@@ -50,6 +50,7 @@ function Produtos() {
 
   const handleEdit = (produto) => {
     setProdutoParaEditar(produto);
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // Rola para o topo para ver o form
   };
 
   const handleCancelEdit = () => {
@@ -63,10 +64,9 @@ function Produtos() {
 
   const handleConfirmDelete = async () => {
     try {
-      // ALTERADO: Usa 'api' e a URL relativa
       await api.delete(`/produtos/${produtoParaDeletar}`);
       toast.success('Produto excluído com sucesso!');
-      fetchProdutos();
+      fetchProdutos(page);
     } catch (err) {
       toast.error('Erro ao excluir produto.');
     } finally {
@@ -80,27 +80,28 @@ function Produtos() {
       <Typography variant="h4" component="h1" gutterBottom>
         Gerenciamento de Produtos
       </Typography>
-      <ProdutoForm
-        onSucesso={handleSuccess}
-        produtoParaEditar={produtoParaEditar}
-        limparEdicao={handleCancelEdit}
-      />
-      <ListaProdutos
-        onEdit={handleEdit}
-        onDeleteRequest={handleDeleteRequest}
-        produtos={produtos}
-        loading={loading}
-      />
+
+      <Paper elevation={3} sx={{ mb: 4 }}>
+        <ProdutoForm
+          onSucesso={handleSuccess}
+          produtoParaEditar={produtoParaEditar}
+          limparEdicao={handleCancelEdit}
+        />
+        <Divider />
+        <ListaProdutos
+          onEdit={handleEdit}
+          onDeleteRequest={handleDeleteRequest}
+          produtos={produtos}
+          loading={loading}
+        />
+      </Paper>
       
-      {/* 4. ADICIONA O COMPONENTE DE PAGINAÇÃO NO FINAL DA PÁGINA */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
         <Pagination 
           count={totalPages} 
           page={page} 
           onChange={handlePageChange} 
           color="primary" 
-          showFirstButton 
-          showLastButton 
         />
       </Box>
 
