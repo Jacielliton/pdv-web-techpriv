@@ -319,6 +319,15 @@ function FrenteDeCaixa() {
               </Box>
             )}
 
+            <Stack direction="row" spacing={2}>
+              <Button variant="outlined" fullWidth onClick={() => handleOpenMovimentacaoModal('SANGRIA')}>
+                Registrar Sangria
+              </Button>
+              <Button variant="outlined" fullWidth onClick={() => handleOpenMovimentacaoModal('SUPRIMENTO')}>
+                Registrar Suprimento
+              </Button>
+            </Stack>
+
             <Button
               variant="contained" color="success" size="large" onClick={finalizarVenda}
               disabled={carrinho.length === 0}
