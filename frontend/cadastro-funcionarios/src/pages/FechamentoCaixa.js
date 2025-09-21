@@ -1,4 +1,5 @@
-// frontend/cadastro-funcionarios/src/pages/FechamentoCaixa.js
+// frontend/cadastro-funcionarios/src/pages/FechamentoCaixa.js (VERSÃO COM NOVO DESIGN)
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -6,11 +7,16 @@ import { useAuth } from '../contexts/auth';
 import { toast } from 'react-toastify';
 import { 
   Container, Typography, Paper, Box, Grid, TextField, Button, 
-  CircularProgress, Divider, Alert 
+  CircularProgress, Divider, Alert, List, ListItem, ListItemText, ListItemIcon
 } from '@mui/material';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+
+// Helper para formatar moeda
+const formatCurrency = (value) => `R$ ${Number(value || 0).toFixed(2)}`;
 
 function FechamentoCaixa() {
-  // 1. Pegamos 'isManager' e 'signOut' do contexto para o redirecionamento
   const { atualizarCaixaStatus, isManager, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -55,24 +61,21 @@ function FechamentoCaixa() {
       toast.success('Caixa fechado com sucesso! Finalizando sessão...');
       await atualizarCaixaStatus();
 
-      // 2. LÓGICA DE REDIRECIONAMENTO CORRIGIDA
       setTimeout(() => {
         if (isManager) {
-          // Se for gerente, vai para a página de histórico
           navigate('/historico-caixas');
         } else {
-          // Se for caixa, encerra a sessão e volta para a tela de login
           signOut();
         }
-      }, 1500); // Atraso de 1.5s para o usuário ler o toast
+      }, 1500);
 
     } catch (error) {
       toast.error(error.response?.data?.error || 'Não foi possível fechar o caixa.');
-      setIsClosing(false); // Libera o botão apenas em caso de erro
+      setIsClosing(false);
     }
   };
 
-  if (loading) {
+  if (loading || !resumo) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
         <CircularProgress />
@@ -80,71 +83,92 @@ function FechamentoCaixa() {
     );
   }
 
+  // --- JSX COMPLETAMENTE REDESENHADO ---
   return (
     <Container maxWidth="md">
       <Typography variant="h4" component="h1" gutterBottom>
         Fechamento de Caixa
       </Typography>
-      <Paper sx={{ p: 3 }}>
-        {resumo && (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <Typography variant="h6">Resumo do Sistema</Typography>
-              <Divider sx={{ my: 1 }} />
-              <Typography>Valor de Abertura (Troco): <strong>R$ {resumo.valor_inicial.toFixed(2)}</strong></Typography>
-              <Typography>Vendas em Dinheiro: <strong>R$ {(resumo.totaisPorPagamento.Dinheiro || 0).toFixed(2)}</strong></Typography>
-              <Typography>Total de Suprimentos: <strong>R$ {resumo.totalSuprimentos.toFixed(2)}</strong></Typography>
-              <Typography color="text.secondary">Total de Sangrias: <strong>- R$ {resumo.totalSangrias.toFixed(2)}</strong></Typography>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="h5" component="p">Total Esperado em Dinheiro: <strong>R$ {totalEsperadoDinheiro.toFixed(2)}</strong></Typography>
-            </Grid>
 
-            <Grid item xs={12}>
-              <Typography variant="h6">Conferência Manual</Typography>
-              <Divider sx={{ my: 1 }} />
-              <TextField
-                label="Valor Total Contado em Dinheiro (R$)"
-                type="number"
-                fullWidth
-                value={valorInformado}
-                onChange={(e) => setValorInformado(e.target.value)}
-                sx={{ mt: 2 }}
-                autoFocus
-              />
-            </Grid>
+      <Grid container spacing={4}>
+
+        {/* COLUNA DA ESQUERDA: RESUMO DO SISTEMA */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 2, height: '100%' }}>
+            <Typography variant="h6" gutterBottom>Resumo do Sistema</Typography>
+            <List>
+              <ListItem>
+                <ListItemIcon><ArrowUpwardIcon color="success" /></ListItemIcon>
+                <ListItemText primary="Valor de Abertura (Troco)" secondary={formatCurrency(resumo.valor_inicial)} />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon><AttachMoneyIcon color="success" /></ListItemIcon>
+                <ListItemText primary="Vendas em Dinheiro" secondary={formatCurrency(resumo.totaisPorPagamento.Dinheiro)} />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon><ArrowUpwardIcon color="success" /></ListItemIcon>
+                <ListItemText primary="Total de Suprimentos" secondary={formatCurrency(resumo.totalSuprimentos)} />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon><ArrowDownwardIcon color="error" /></ListItemIcon>
+                <ListItemText primary="Total de Sangrias" secondary={formatCurrency(resumo.totalSangrias)} />
+              </ListItem>
+            </List>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ p: 2, backgroundColor: 'grey.100', borderRadius: 1, textAlign: 'center' }}>
+                <Typography variant="button" color="text.secondary">Total Esperado em Dinheiro</Typography>
+                <Typography variant="h4" component="p" sx={{ fontWeight: 'bold' }}>
+                  {formatCurrency(totalEsperadoDinheiro)}
+                </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* COLUNA DA DIREITA: CONFERÊNCIA E AÇÕES */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <Typography variant="h6" gutterBottom>Conferência Manual</Typography>
+            <TextField
+              label="Valor Total Contado em Dinheiro"
+              type="number"
+              fullWidth
+              value={valorInformado}
+              onChange={(e) => setValorInformado(e.target.value)}
+              sx={{ mt: 2, mb: 3 }}
+              InputProps={{ startAdornment: <Typography sx={{ mr: 1 }}>R$</Typography> }}
+              autoFocus
+            />
 
             {valorInformado !== '' && (
-              <Grid item xs={12}>
-                  <Alert 
-                    severity={diferenca < 0 ? 'error' : (diferenca > 0 ? 'warning' : 'success')}
-                  >
-                    <Typography variant="h6">
-                      Diferença: R$ {diferenca.toFixed(2)}
-                      {diferenca < 0 && ' (Quebra de caixa)'}
-                      {diferenca > 0 && ' (Sobra de caixa)'}
-                      {diferenca === 0 && ' (Caixa correto)'}
-                    </Typography>
-                  </Alert>
-              </Grid>
+              <Alert 
+                severity={diferenca < 0 ? 'error' : (diferenca > 0 ? 'warning' : 'success')}
+                sx={{ mb: 3 }}
+              >
+                <Typography variant="h6">
+                  Diferença: {formatCurrency(diferenca)}
+                  {diferenca < 0 && ' (Quebra de caixa)'}
+                  {diferenca > 0 && ' (Sobra de caixa)'}
+                  {diferenca === 0 && ' (Caixa correto)'}
+                </Typography>
+              </Alert>
             )}
             
-            <Grid item xs={12}>
-              <Box sx={{ position: 'relative', mt: 2 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  onClick={handleFecharCaixa}
-                  disabled={isClosing}
-                >
-                  Confirmar Fechamento do Caixa
-                </Button>
-                {isClosing && <CircularProgress size={24} sx={{ position: 'absolute', top: '50%', left: '15%', mt: '-12px' }} />}
-              </Box>
-            </Grid>
-          </Grid>
-        )}
-      </Paper>
+            <Box sx={{ mt: 'auto', position: 'relative' }}>
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                fullWidth
+                onClick={handleFecharCaixa}
+                disabled={isClosing}
+                sx={{ p: 1.5 }}
+              >
+                {isClosing ? <CircularProgress size={26} color="inherit" /> : 'Confirmar Fechamento do Caixa'}
+              </Button>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
     </Container>
   );
 }

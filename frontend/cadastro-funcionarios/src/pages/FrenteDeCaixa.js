@@ -12,9 +12,11 @@ import {
   Container, Typography, Grid, TextField, 
   Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Button, Select, MenuItem, FormControl, InputLabel, IconButton,
-  Box, CircularProgress, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Divider 
+  Box, CircularProgress, Stack, Dialog, DialogTitle, DialogContent, DialogActions, Divider, InputAdornment 
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 
 function FrenteDeCaixa() {
   const { user, isManager, caixaStatus, loadingCaixa } = useAuth();
@@ -30,6 +32,7 @@ function FrenteDeCaixa() {
   const [modalMovimentacaoOpen, setModalMovimentacaoOpen] = useState(false);
   const [tipoMovimentacao, setTipoMovimentacao] = useState('');
   const [vendaFinalizada, setVendaFinalizada] = useState(null);
+  const [lastAddedId, setLastAddedId] = useState(null);
 
   useEffect(() => {
     const fetchProdutos = async () => {
@@ -81,6 +84,9 @@ function FrenteDeCaixa() {
   };
 
   const adicionarAoCarrinho = (produto) => {
+    setLastAddedId(produto.id); // Ativa o highlight
+    setTimeout(() => setLastAddedId(null), 500); // Remove o highlight após 0.5s
+
     const itemExistente = carrinho.find(item => item.id === produto.id);
     const quantidadeAtualNoCarrinho = itemExistente ? itemExistente.quantidade : 0;
     if ((quantidadeAtualNoCarrinho + 1) > produto.quantidade_estoque) {
@@ -168,16 +174,17 @@ function FrenteDeCaixa() {
   const handleQuantidadeChange = (produtoId, novaQuantidade) => {
     const qtd = parseInt(novaQuantidade, 10);
     const produtoOriginal = todosProdutos.find(p => p.id === produtoId);
-    if (isNaN(qtd) || qtd < 1) return;
-    if (produtoOriginal && qtd > produtoOriginal.quantidade_estoque) {
-      toast.error(`Estoque máximo para ${produtoOriginal.nome} é ${produtoOriginal.quantidade_estoque}.`);
+    if (isNaN(qtd)) return;
+    if (qtd < 1) { // Permite remover o item se a quantidade for 0 ou menor
+      removerDoCarrinho(produtoId);
       return;
     }
-    setCarrinho(carrinhoAtual =>
-      carrinhoAtual.map(item =>
-        item.id === produtoId ? { ...item, quantidade: qtd } : item
-      )
-    );
+    if (produtoOriginal && qtd > produtoOriginal.quantidade_estoque) {
+      toast.error(`Estoque máximo para ${produtoOriginal.nome} é ${produtoOriginal.quantidade_estoque}.`);
+      setCarrinho(carrinhoAtual => carrinhoAtual.map(item => item.id === produtoId ? { ...item, quantidade: produtoOriginal.quantidade_estoque } : item ));
+      return;
+    }
+    setCarrinho(carrinhoAtual => carrinhoAtual.map(item => item.id === produtoId ? { ...item, quantidade: qtd } : item ));
   };
 
   if (loadingCaixa) {
@@ -220,29 +227,38 @@ function FrenteDeCaixa() {
         <Typography variant="h5" sx={{ p: 2, pb: 1 }}>Itens da Venda</Typography>
         <Divider />
         <TableContainer sx={{ flex: 1, overflowY: 'auto' }}>
-          <Table stickyHeader>
+          <Table stickyHeader size="small"> {/* Adicionado size="small" para mais densidade */}
             <TableHead>
               <TableRow>
                 <TableCell>Produto</TableCell>
-                <TableCell align="center">Qtd.</TableCell>
+                <TableCell align="center" sx={{ width: '130px' }}>Qtd.</TableCell> {/* Largura fixa */}
                 <TableCell align="right">Subtotal</TableCell>
                 <TableCell align="center">Ação</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {carrinho.length > 0 ? carrinho.map(item => (
-                <TableRow key={item.id}>
+                <TableRow 
+                  key={item.id}
+                  // APLICA A ANIMAÇÃO DE HIGHLIGHT
+                  sx={{ animation: lastAddedId === item.id ? 'highlight-add 0.5s ease-out' : 'none' }}
+                >
                   <TableCell>
                     <Typography variant="body2" sx={{ fontWeight: 'bold' }}>{item.nome}</Typography>
                     <Typography variant="caption" color="text.secondary">R$ {Number(item.preco).toFixed(2)}</Typography>
                   </TableCell>
+                  
+                  {/* BOTÕES DE INCREMENTAR/DECREMENTAR */}
                   <TableCell align="center">
-                    <TextField
-                      type="number" value={item.quantidade}
-                      onChange={(e) => handleQuantidadeChange(item.id, e.target.value)}
-                      size="small" sx={{ width: '80px' }}
-                      InputProps={{ inputProps: { min: 1, max: todosProdutos.find(p => p.id === item.id)?.quantidade_estoque } }}
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <IconButton size="small" onClick={() => handleQuantidadeChange(item.id, item.quantidade - 1)}>
+                        <RemoveCircleOutlineIcon fontSize="small" />
+                      </IconButton>
+                      <Typography sx={{ mx: 1, fontWeight: 'bold' }}>{item.quantidade}</Typography>
+                      <IconButton size="small" onClick={() => handleQuantidadeChange(item.id, item.quantidade + 1)}>
+                        <AddCircleOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
                   </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 'medium' }}>R$ {(item.quantidade * item.preco).toFixed(2)}</TableCell>
                   <TableCell align="center">
@@ -268,8 +284,8 @@ function FrenteDeCaixa() {
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <Typography variant="h5">Total</Typography>
-                <Typography variant="h4" component="p" sx={{ fontWeight: 'bold' }}>
-                R$ {totalVenda.toFixed(2)}
+                <Typography variant="h4" component="p" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                  R$ {totalVenda.toFixed(2)}
                 </Typography>
             </Box>
           
@@ -288,7 +304,10 @@ function FrenteDeCaixa() {
           </FormControl>            
           
             {metodoPagamento === 'Dinheiro' && (
-              <TextField label="Valor Pago" type="number" fullWidth value={valorPago} onChange={(e) => setValorPago(e.target.value)} />
+              <TextField 
+                label="Valor Pago" type="number" fullWidth value={valorPago} onChange={(e) => setValorPago(e.target.value)}
+                InputProps={{ startAdornment: <InputAdornment position="start">R$</InputAdornment> }} // Melhora a UI do campo
+              />
             )}
             
             {troco > 0 && (
@@ -302,7 +321,7 @@ function FrenteDeCaixa() {
 
             <Button
               variant="contained" color="success" size="large" onClick={finalizarVenda}
-              disabled={carrinho.length === 0} // <--- REMOVA '|| pagamentoPendente'
+              disabled={carrinho.length === 0}
               sx={{ p: 1.5, fontSize: '1.1rem', fontWeight: 'bold' }}
             >
               Finalizar Venda
