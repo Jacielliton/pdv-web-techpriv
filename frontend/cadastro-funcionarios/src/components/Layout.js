@@ -43,7 +43,7 @@ const Layout = () => {
   const navItems = [
     { text: 'Frente de Caixa', icon: <PointOfSaleIcon />, path: '/venda', managerOnly: false },
     { text: 'Fechar Caixa', icon: <CloseIcon />, path: '/fechamento-caixa', managerOnly: false, condition: caixaStatus === 'ABERTO', specialStyle: true },
-    { text: 'Histórico de Vendas', icon: <HistoryIcon />, path: '/historico', managerOnly: true },
+    { text: 'Histórico de Vendas', icon: <HistoryIcon />, path: '/historico', managerOnly: false },
     { text: 'Histórico de Caixas', icon: <HistoryIcon />, path: '/historico-caixas', managerOnly: true },
     { text: 'Histórico de Mov.', icon: <SyncAltIcon />, path: '/historico-movimentacoes', managerOnly: true },
     { text: 'Relatórios', icon: <AssessmentIcon />, path: '/relatorios', managerOnly: true },

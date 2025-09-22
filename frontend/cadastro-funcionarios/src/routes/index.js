@@ -54,10 +54,8 @@ const Routes = () => {
 
           {/* --- Rotas Comuns para TODOS os funcionários logados --- */}
           <Route path="/venda" element={<FrenteDeCaixa />} />
-          
-          {/* --- ROTA CORRIGIDA --- */}
-          {/* Fechamento de Caixa agora é acessível a todos os usuários logados */}
           <Route path="/fechamento-caixa" element={<FechamentoCaixa />} />
+          <Route path="/historico" element={<HistoricoVendas />} />
           
           {/* Rota "catch-all" para redirecionar qualquer outra URL inválida */}
           <Route path="*" element={<Navigate to={isManager ? "/" : "/venda"} replace />} />

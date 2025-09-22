@@ -33,6 +33,7 @@ routes.get('/produtos', ProdutoController.index);
 routes.post('/vendas', VendaController.store);
 routes.get('/vendas/:id', VendaController.show);
 routes.put('/vendas/:id/cancelar', VendaController.cancelar);
+routes.get('/vendas', VendaController.index);
 
 // --- ROTAS DE CAIXA MOVIDAS PARA A SEÇÃO CORRETA ---
 routes.get('/caixa/status', CaixaController.getStatus);
@@ -58,7 +59,6 @@ routes.post('/produtos', ProdutoController.store);
 routes.put('/produtos/:id', ProdutoController.update);
 routes.delete('/produtos/:id', ProdutoController.delete);
 
-routes.get('/vendas', VendaController.index);
 routes.get('/dashboard/summary', DashboardController.getSummary);
 routes.get('/dashboard/vendas-semanais', DashboardController.getVendasSemanais);
 
