@@ -23,12 +23,16 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import LogoutIcon from '@mui/icons-material/Logout';
 
+import ModalShortcuts from './ModalShortcuts'; 
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+
 const drawerWidth = 240;
 
 const Layout = () => {
   const { signOut, user, isManager, caixaStatus } = useAuth();
   const { mode, toggleTheme } = useTheme();
   const [open, setOpen] = useState(true);
+  const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -104,6 +108,19 @@ const Layout = () => {
         </List>
         
         <Box sx={{ marginTop: 'auto', p: 2, whiteSpace: 'nowrap' }}>
+
+          <ListItem disablePadding sx={{ display: 'block' }}>
+                <ListItemButton
+                  onClick={() => setShortcutsModalOpen(true)}
+                  sx={{ justifyContent: open ? 'initial' : 'center', px: 2.5 }}
+                >
+                  <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center' }}>
+                    <HelpOutlineIcon />
+                  </ListItemIcon>
+                  {open && <ListItemText primary="Atalhos" sx={{ opacity: open ? 1 : 0 }} />}
+                </ListItemButton>
+            </ListItem>
+
             <Divider />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: open ? 'space-between' : 'center', mt: 2 }}>
                 {open && (
@@ -132,6 +149,7 @@ const Layout = () => {
         <Outlet />
       </Box>
 
+      <ModalShortcuts open={shortcutsModalOpen} onClose={() => setShortcutsModalOpen(false)} />
       <ToastContainer position="top-right" autoClose={3000} />
     </Box>
   );

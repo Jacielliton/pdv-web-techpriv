@@ -1,5 +1,6 @@
 // pdv-web-techpriv\frontend\cadastro-funcionarios\src\pages\FrenteDeCaixa.js
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'; 
+import { useHotkeys } from '../hooks/useHotkeys';
 import Recibo from '../components/Recibo';
 import axios from 'axios';
 import api from '../services/api';
@@ -35,6 +36,16 @@ function FrenteDeCaixa() {
   const [vendaFinalizada, setVendaFinalizada] = useState(null);
   const [lastAddedId, setLastAddedId] = useState(null);
   const reciboRef = useRef(null);
+  const buscaInputRef = useRef(null);
+  const valorPagoInputRef = useRef(null);
+
+  const handleLimparCarrinho = useCallback(() => {
+    if (carrinho.length > 0) {
+      setCarrinho([]);
+      setValorPago('');
+      toast.info('Carrinho limpo.');
+    }
+  }, [carrinho]);
 
   const handleImprimirRecibo = () => {
     const node = reciboRef.current;
@@ -67,6 +78,51 @@ function FrenteDeCaixa() {
     }
   };
 
+
+  const finalizarVenda = async () => {
+    if (carrinho.length === 0) {
+      toast.error('Adicione pelo menos um item à venda.');
+      return;
+    }
+
+    const payload = {
+      valor_total: totalVenda,
+      metodo_pagamento: metodoPagamento,
+      itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
+    };
+
+    try {
+      const response = await api.post('/vendas', payload);
+      toast.success('Venda registrada com sucesso!');
+
+      const novaVendaId = response.data.venda?.id;
+      if (novaVendaId) {
+        const responseDetalhada = await api.get(`/vendas/${novaVendaId}`);
+        setVendaFinalizada(responseDetalhada.data);
+      } else {
+        toast.error("Ocorreu um erro ao processar a venda.");
+      }
+
+      setCarrinho([]);
+      setValorPago('');
+
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erro crítico ao registrar a venda.');
+    }
+  };
+
+
+
+  useHotkeys('F4', () => buscaInputRef.current?.focus());
+  useHotkeys('F8', () => {
+    if (metodoPagamento === 'Dinheiro') {
+      valorPagoInputRef.current?.focus();
+    }
+  });
+  // Agora esta linha é válida, pois 'finalizarVenda' já foi declarada acima.
+  useHotkeys('F10', finalizarVenda); 
+  useHotkeys('Escape', handleLimparCarrinho);
+  
 
   useEffect(() => {
     const fetchProdutos = async () => {
@@ -166,40 +222,6 @@ function FrenteDeCaixa() {
       setOverrideError('E-mail ou senha de gerente inválidos.');
     }
   };
-
-  const finalizarVenda = async () => {
-  if (carrinho.length === 0) {
-    toast.error('Adicione pelo menos um item à venda.');
-    return;
-  }
-
-  // A lógica agora é direta, sem if/else para o método de pagamento
-  const payload = {
-    valor_total: totalVenda,
-    metodo_pagamento: metodoPagamento, // Usa o método selecionado no estado
-    itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
-  };
-
-  try {
-    const response = await api.post('/vendas', payload);
-    toast.success('Venda registrada com sucesso!');
-
-    const novaVendaId = response.data.venda?.id;
-    if (novaVendaId) {
-      const responseDetalhada = await api.get(`/vendas/${novaVendaId}`);
-      setVendaFinalizada(responseDetalhada.data); // Abre o modal de sucesso
-    } else {
-      toast.error("Ocorreu um erro ao processar a venda.");
-    }
-
-    setCarrinho([]);
-    setValorPago('');
-
-  } catch (error) {
-    toast.error(error.response?.data?.error || 'Erro crítico ao registrar a venda.');
-  }
-};
-
  
   const handleNovaVenda = () => {
     setVendaFinalizada(null);
@@ -244,6 +266,7 @@ function FrenteDeCaixa() {
           variant="outlined"
           value={termoBusca}
           onChange={e => setTermoBusca(e.target.value)}
+          inputRef={buscaInputRef} 
         />
         <Paper sx={{ flex: 1, p: 2, overflowY: 'auto' }}>
           <Grid container spacing={2}>
@@ -341,6 +364,7 @@ function FrenteDeCaixa() {
               <TextField 
                 label="Valor Pago" type="number" fullWidth value={valorPago} onChange={(e) => setValorPago(e.target.value)}
                 InputProps={{ startAdornment: <InputAdornment position="start">R$</InputAdornment> }} // Melhora a UI do campo
+                inputRef={valorPagoInputRef}
               />
             )}
             
