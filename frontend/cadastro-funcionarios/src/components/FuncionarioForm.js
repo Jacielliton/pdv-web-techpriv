@@ -78,8 +78,7 @@ const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdica
             />
           </Grid>
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth required>
-              <InputLabel id="cargo-select-label">Cargo</InputLabel>
+            <FormControl fullWidth required>              
               <Select
                 labelId="cargo-select-label"
                 id="cargo-select"
@@ -87,7 +86,9 @@ const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdica
                 value={formData.cargo}
                 label="Cargo"
                 onChange={handleChange}
+                displayEmpty
               >
+                <MenuItem value=""><em>Selecione</em></MenuItem>
                 <MenuItem value="gerente">Gerente</MenuItem>
                 <MenuItem value="supervisor">Supervisor</MenuItem>
                 <MenuItem value="caixa">Caixa</MenuItem>

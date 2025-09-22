@@ -125,13 +125,13 @@ function HistoricoVendas() {
           <Grid item xs={12} sm={4}><TextField name="vendaId" label="Buscar por ID" value={filtros.vendaId} onChange={handleFiltroChange} fullWidth size="small" /></Grid>
           <Grid item xs={12} sm={4}><TextField name="dataInicio" label="Data Início" type="date" value={filtros.dataInicio} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
           <Grid item xs={12} sm={4}><TextField name="dataFim" label="Data Fim" type="date" value={filtros.dataFim} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
-          <Grid item xs={12} sm={4}><FormControl fullWidth size="small">
-            <InputLabel>Método Pagto.</InputLabel>
+          <Grid item xs={12} sm={4}><FormControl fullWidth size="small">            
             <Select 
               name="metodoPagamento" 
               value={filtros.metodoPagamento} 
               label="Método Pagto." 
               onChange={handleFiltroChange}
+              displayEmpty
             >
               <MenuItem value=""><em>Todos</em></MenuItem>
               <MenuItem value="Dinheiro">Dinheiro</MenuItem>

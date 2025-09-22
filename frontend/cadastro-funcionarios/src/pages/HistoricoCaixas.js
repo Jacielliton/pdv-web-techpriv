@@ -78,9 +78,8 @@ function HistoricoCaixas() {
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={4}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Operador</InputLabel>
-              <Select name="funcionarioId" value={filtros.funcionarioId} label="Operador" onChange={handleFiltroChange}>
+            <FormControl fullWidth size="small">              
+              <Select name="funcionarioId" value={filtros.funcionarioId} label="Operador" displayEmpty onChange={handleFiltroChange}>
                 <MenuItem value=""><em>Todos</em></MenuItem>
                 {funcionarios.map(func => (
                   <MenuItem key={func.id} value={func.id}>{func.nome}</MenuItem>

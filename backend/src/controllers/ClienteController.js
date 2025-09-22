@@ -3,14 +3,27 @@ const { Op } = require('sequelize');
 const Cliente = require('../models/Cliente');
 
 class ClienteController {
-  // Listar todos os clientes (com busca opcional)
   async index(req, res) {
-    const { nome } = req.query;
+    // 1. RECEBE OS PARÂMETROS DE PAGINAÇÃO
+    const { page = 1, limit = 10, nome } = req.query;
+    const offset = parseInt(limit, 10) * (parseInt(page, 10) - 1);
+
     const whereClause = nome ? { nome: { [Op.iLike]: `%${nome}%` } } : {};
     
     try {
-      const clientes = await Cliente.findAll({ where: whereClause, order: [['nome', 'ASC']] });
-      return res.json(clientes);
+      // 2. USA findAndCountAll PARA CONTAR O TOTAL DE REGISTROS
+      const { count, rows: clientes } = await Cliente.findAndCountAll({
+        where: whereClause,
+        order: [['nome', 'ASC']],
+        limit: parseInt(limit, 10),
+        offset,
+        distinct: true
+      });
+
+      // 3. CALCULA O TOTAL DE PÁGINAS E ENVIA NA RESPOSTA
+      const totalPages = Math.ceil(count / parseInt(limit, 10));
+      return res.json({ clientes, totalPages, currentPage: parseInt(page, 10) });
+
     } catch (error) {
       return res.status(500).json({ error: "Erro ao listar clientes" });
     }

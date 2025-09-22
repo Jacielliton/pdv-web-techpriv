@@ -9,24 +9,25 @@ const ModalSelecionarCliente = ({ open, onClose, onClienteSelecionado }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      const fetchClientes = async () => {
-        setLoading(true);
-        try {
-          const response = await api.get(`/clientes?nome=${termoBusca}`);
-          setClientes(response.data);
-        } catch (error) {
-          console.error("Erro ao buscar clientes", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      // Debounce: espera 300ms após o usuário parar de digitar para fazer a busca
-      const timerId = setTimeout(fetchClientes, 300);
-      return () => clearTimeout(timerId);
-    }
-  }, [termoBusca, open]);
+  if (open) {
+    const fetchClientes = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get(`/clientes?nome=${termoBusca}`);
+        // CORREÇÃO: Acessamos a propriedade 'clientes' do objeto de resposta
+        setClientes(response.data.clientes || []);
+      } catch (error) {
+        console.error("Erro ao buscar clientes", error);
+        setClientes([]); // Garante que clientes seja sempre um array em caso de erro
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    const timerId = setTimeout(fetchClientes, 300);
+    return () => clearTimeout(timerId);
+  }
+}, [termoBusca, open]);
 
   const handleSelect = (cliente) => {
     onClienteSelecionado(cliente);
