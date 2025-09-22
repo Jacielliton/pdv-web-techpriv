@@ -1,14 +1,11 @@
-// frontend/src/components/Recibo.js (VERSÃO FINAL COM forwardRef)
+// frontend/src/components/Recibo.js (VERSÃO FINAL)
 import React from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableRow, Divider } from '@mui/material';
 
-// Usamos React.forwardRef para permitir que o componente pai acesse o DOM deste componente
 const Recibo = React.forwardRef(({ venda }, ref) => {
   if (!venda) {
     return null;
   }
-
-  // Passamos a 'ref' para o elemento Box principal
   return (
     <Box ref={ref} sx={{ padding: '20px', fontFamily: 'monospace', color: 'black', width: '300px' }}>
       <Typography variant="h6" align="center">PDV - TechPriv</Typography>
@@ -17,6 +14,12 @@ const Recibo = React.forwardRef(({ venda }, ref) => {
       <Typography variant="body2">Venda ID: {venda.id}</Typography>
       <Typography variant="body2">Data: {new Date(venda.data_venda).toLocaleString('pt-BR')}</Typography>
       <Typography variant="body2">Operador: {venda.Funcionario?.nome || 'N/A'}</Typography>
+      
+      {/* ADICIONA A EXIBIÇÃO DO CLIENTE, SE HOUVER */}
+      {venda.Cliente && (
+        <Typography variant="body2">Cliente: {venda.Cliente.nome}</Typography>
+      )}
+
       <Divider sx={{ my: 2 }} />
       <Table size="small">
         <TableBody>

@@ -64,6 +64,7 @@ routes.get('/dashboard/vendas-semanais', DashboardController.getVendasSemanais);
 
 // A rota de histórico de TODOS os caixas continua aqui, pois é uma função gerencial.
 routes.get('/caixas/historico', CaixaController.getHistorico);
+routes.get('/caixas/movimentacoes', CaixaController.getMovimentacoes);
 routes.get('/relatorios/vendas', RelatorioController.getRelatorioVendas);
 
 // ROTAS DE CLIENTES

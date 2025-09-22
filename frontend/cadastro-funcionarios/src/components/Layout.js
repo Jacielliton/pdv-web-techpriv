@@ -15,6 +15,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import CloseIcon from '@mui/icons-material/Close';
 import HistoryIcon from '@mui/icons-material/History';
+import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
@@ -44,6 +45,7 @@ const Layout = () => {
     { text: 'Fechar Caixa', icon: <CloseIcon />, path: '/fechamento-caixa', managerOnly: false, condition: caixaStatus === 'ABERTO', specialStyle: true },
     { text: 'Histórico de Vendas', icon: <HistoryIcon />, path: '/historico', managerOnly: true },
     { text: 'Histórico de Caixas', icon: <HistoryIcon />, path: '/historico-caixas', managerOnly: true },
+    { text: 'Histórico de Mov.', icon: <SyncAltIcon />, path: '/historico-movimentacoes', managerOnly: true },
     { text: 'Relatórios', icon: <AssessmentIcon />, path: '/relatorios', managerOnly: true },
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/', managerOnly: true },
     { text: 'Funcionários', icon: <PeopleIcon />, path: '/funcionarios', managerOnly: true },

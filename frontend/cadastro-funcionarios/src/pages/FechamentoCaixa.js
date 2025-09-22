@@ -118,7 +118,7 @@ function FechamentoCaixa() {
               </ListItem>
               <ListItem>
                 <ListItemIcon><AttachMoneyIcon color="success" /></ListItemIcon>
-                <ListItemText primary="Vendas em Dinheiro" secondary={formatCurrency(resumo.totaisPorPagamento.Dinheiro)} />
+                <ListItemText primary="Total Pago Presencial" secondary={formatCurrency(resumo.totaisPorPagamento.Dinheiro)} />
               </ListItem>
               <ListItem>
                 <ListItemIcon><ArrowUpwardIcon color="success" /></ListItemIcon>

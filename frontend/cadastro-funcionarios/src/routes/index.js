@@ -14,6 +14,7 @@ import HistoricoCaixas from '../pages/HistoricoCaixas';
 import Relatorios from '../pages/Relatorios';
 import FechamentoCaixa from '../pages/FechamentoCaixa'; 
 import Clientes from '../pages/Clientes';
+import HistoricoMovimentacoes from '../pages/HistoricoMovimentacoes';
 
 
 const Routes = () => {
@@ -45,6 +46,7 @@ const Routes = () => {
               <Route path="/produtos" element={<Produtos />} />
               <Route path="/historico" element={<HistoricoVendas />} />
               <Route path="/historico-caixas" element={<HistoricoCaixas />} />
+              <Route path="/historico-movimentacoes" element={<HistoricoMovimentacoes />} />
               <Route path="/relatorios" element={<Relatorios />} />
               <Route path="/clientes" element={<Clientes />} />
             </>

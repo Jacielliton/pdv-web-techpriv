@@ -6,6 +6,7 @@ const VendaItem = require('../models/VendaItem');
 const Produto = require('../models/Produto');
 const Funcionario = require('../models/Funcionario');
 const Caixa = require('../models/Caixa');
+const Cliente = require('../models/Cliente');
 
 class VendaController {
   // Listar todas as vendas com detalhes
@@ -34,6 +35,7 @@ class VendaController {
         order: [['data_venda', 'DESC']],
         include: [
           { model: Funcionario, attributes: ['nome'] },
+          { model: Cliente, attributes: ['nome'] },
           {
             model: VendaItem,
             attributes: ['quantidade', 'preco_unitario'],
@@ -93,6 +95,7 @@ class VendaController {
         include: [
           // Inclui o nome do funcionário que fez a venda
           { model: Funcionario, attributes: ['nome'] },
+          { model: Cliente, attributes: ['nome'] },
           // Inclui os itens da venda
           {
             model: VendaItem,

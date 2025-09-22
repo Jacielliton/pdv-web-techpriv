@@ -134,6 +134,39 @@ class CaixaController {
       return res.status(500).json({ error: 'Erro ao buscar histórico de caixas.', details: error.message });
     }
   }
+
+// MÉTODO PARA BUSCAR O HISTÓRICO DE MOVIMENTAÇÕES
+  async getMovimentacoes(req, res) {
+    const { page = 1, limit = 15, dataInicio, dataFim, tipo } = req.query;
+    const offset = parseInt(limit, 10) * (parseInt(page, 10) - 1);
+
+    const whereClause = {};
+    if (tipo) {
+      whereClause.tipo = tipo;
+    }
+    if (dataInicio && dataFim) {
+      const dataFimAjustada = new Date(dataFim);
+      dataFimAjustada.setHours(23, 59, 59, 999);
+      whereClause.data_movimentacao = { [Op.between]: [new Date(dataInicio), dataFimAjustada] };
+    }
+
+    try {
+      const { count, rows: movimentacoes } = await MovimentacaoCaixa.findAndCountAll({
+        where: whereClause,
+        order: [['data_movimentacao', 'DESC']],
+        include: [{ model: Funcionario, attributes: ['nome'] }], // Inclui o nome do funcionário
+        limit: parseInt(limit, 10),
+        offset,
+        distinct: true,
+      });
+      
+      const totalPages = Math.ceil(count / parseInt(limit, 10));
+      return res.json({ movimentacoes, totalPages, currentPage: parseInt(page, 10) });
+    } catch (error) {
+      console.error("Erro ao buscar histórico de movimentações:", error);
+      return res.status(500).json({ error: 'Erro ao buscar histórico de movimentações.' });
+    }
+  }
 }
 
 module.exports = new CaixaController();
