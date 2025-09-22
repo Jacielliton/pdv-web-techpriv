@@ -7,6 +7,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useTheme } from '../contexts/theme'; 
 import { Box, IconButton, List, ListItem, ListItemButton, ListItemText, Typography, Divider, Button, Drawer, ListItemIcon } from '@mui/material';
+import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount'; 
 
 // Ícones
 import MenuIcon from '@mui/icons-material/Menu';
@@ -46,6 +47,7 @@ const Layout = () => {
     { text: 'Relatórios', icon: <AssessmentIcon />, path: '/relatorios', managerOnly: true },
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/', managerOnly: true },
     { text: 'Funcionários', icon: <PeopleIcon />, path: '/funcionarios', managerOnly: true },
+    { text: 'Clientes', icon: <SupervisorAccountIcon />, path: '/clientes', managerOnly: true }, // NOVO ITEM
     { text: 'Produtos', icon: <InventoryIcon />, path: '/produtos', managerOnly: true },
   ];
 

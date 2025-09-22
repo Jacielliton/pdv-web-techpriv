@@ -9,6 +9,7 @@ const VendaController = require('../controllers/VendaController');
 const DashboardController = require('../controllers/DashboardController');
 const CaixaController = require('../controllers/CaixaController');
 const RelatorioController = require('../controllers/RelatorioController'); // 1. IMPORTE
+const ClienteController = require('../controllers/ClienteController');
 
 // Middlewares
 const authMiddleware = require('../middlewares/auth');
@@ -31,6 +32,7 @@ routes.use(authMiddleware);
 routes.get('/produtos', ProdutoController.index);
 routes.post('/vendas', VendaController.store);
 routes.get('/vendas/:id', VendaController.show);
+routes.put('/vendas/:id/cancelar', VendaController.cancelar);
 
 // --- ROTAS DE CAIXA MOVIDAS PARA A SEÇÃO CORRETA ---
 routes.get('/caixa/status', CaixaController.getStatus);
@@ -38,6 +40,7 @@ routes.post('/caixa/abrir', CaixaController.abrirCaixa);
 routes.post('/caixa/movimentacao', CaixaController.registrarMovimentacao);
 routes.get('/caixa/resumo', CaixaController.getResumo);
 routes.post('/caixa/fechar', CaixaController.fecharCaixa); // <--- MOVIDO PARA CIMA
+
 
 
 // ===================================================================
@@ -62,6 +65,13 @@ routes.get('/dashboard/vendas-semanais', DashboardController.getVendasSemanais);
 // A rota de histórico de TODOS os caixas continua aqui, pois é uma função gerencial.
 routes.get('/caixas/historico', CaixaController.getHistorico);
 routes.get('/relatorios/vendas', RelatorioController.getRelatorioVendas);
+
+// ROTAS DE CLIENTES
+routes.get('/clientes', ClienteController.index);
+routes.get('/clientes/:id', ClienteController.show);
+routes.post('/clientes', ClienteController.store);
+routes.put('/clientes/:id', ClienteController.update);
+routes.delete('/clientes/:id', ClienteController.destroy);
 
 
 module.exports = routes;

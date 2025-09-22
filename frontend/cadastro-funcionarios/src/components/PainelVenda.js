@@ -1,6 +1,6 @@
 // frontend/src/components/PainelVenda.js
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Paper, Typography, Divider, TableContainer, Table, TableHead, TableRow, TableCell, TableBody,
   Box, IconButton, FormControl, InputLabel, Select, MenuItem, TextField, Stack, Button, InputAdornment
@@ -10,34 +10,33 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 
 const PainelVenda = ({
-  carrinho,
-  lastAddedId,
-  onQuantidadeChange,
-  onRemoverDoCarrinho,
-  onFinalizarVenda,
-  onAbrirModalMovimentacao,
+  carrinho, subtotal, desconto, totalVenda, clienteSelecionado, lastAddedId,
+  onQuantidadeChange, onRemoverDoCarrinho, onFinalizarVenda, onAbrirModalMovimentacao,
+  onAbrirModalCliente, onRemoverCliente, onAbrirModalDesconto, onRemoverDesconto
 }) => {
+  // Estados locais apenas para controle de UI deste componente
   const [metodoPagamento, setMetodoPagamento] = useState('Dinheiro');
   const [valorPago, setValorPago] = useState('');
   const [troco, setTroco] = useState(0);
 
-  const totalVenda = useMemo(() => {
-    return carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
-  }, [carrinho]);
-
+  // Efeito para calcular o troco
   useEffect(() => {
     const valorPagoFloat = parseFloat(valorPago);
-    if (!isNaN(valorPagoFloat) && valorPagoFloat >= totalVenda) {
+    if (metodoPagamento === 'Dinheiro' && !isNaN(valorPagoFloat) && valorPagoFloat >= totalVenda) {
       setTroco(valorPagoFloat - totalVenda);
     } else {
       setTroco(0);
     }
-  }, [valorPago, totalVenda]);
+  }, [valorPago, totalVenda, metodoPagamento]);
 
-  // Limpa o valor pago quando o carrinho ou método de pagamento muda
+  // Limpa campos locais quando o carrinho muda
   useEffect(() => {
     setValorPago('');
-  }, [carrinho, metodoPagamento]);
+  }, [carrinho]);
+
+  const handleFinalizar = () => {
+    onFinalizarVenda(metodoPagamento, valorPago);
+  };
 
   return (
     <Paper sx={{ flex: 5, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 32px)' }}>
@@ -91,7 +90,22 @@ const PainelVenda = ({
 
       <Divider />
       
-      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5, mt: 'auto' }}>
+        {/* Mostra o Subtotal e Desconto se houver desconto aplicado */}
+        {desconto > 0 && (
+          <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Typography>Subtotal</Typography>
+              <Typography>R$ {subtotal.toFixed(2)}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', color: 'error.main' }}>
+              <Typography color="inherit">Desconto</Typography>
+              <Typography color="inherit">- R$ {desconto.toFixed(2)}</Typography>
+            </Box>
+          </>
+        )}
+        
+        {/* Total da Venda */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <Typography variant="h5">Total</Typography>
           <Typography variant="h4" component="p" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
@@ -126,16 +140,25 @@ const PainelVenda = ({
         )}
 
         <Stack direction="row" spacing={2}>
-          <Button variant="outlined" fullWidth onClick={() => onAbrirModalMovimentacao('SANGRIA')}>
-            Registrar Sangria
-          </Button>
-          <Button variant="outlined" fullWidth onClick={() => onAbrirModalMovimentacao('SUPRIMENTO')}>
-            Registrar Suprimento
-          </Button>
+          <Button variant="outlined" fullWidth onClick={() => onAbrirModalMovimentacao('SANGRIA')}>Sangria</Button>
+          <Button variant="outlined" fullWidth onClick={() => onAbrirModalMovimentacao('SUPRIMENTO')}>Suprimento</Button>
         </Stack>
+        <Stack direction="row" spacing={2}>
+          <Button variant="outlined" color="secondary" fullWidth onClick={onAbrirModalDesconto}>Aplicar Desconto</Button>
+          <Button variant="outlined" color="secondary" fullWidth onClick={onRemoverDesconto} disabled={desconto === 0}>Remover Desconto</Button>
+        </Stack>
+        
+        {clienteSelecionado ? (
+          <Box sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, textAlign: 'center' }}>
+            <Typography variant="body2">Cliente: {clienteSelecionado.nome}</Typography>
+            <Button size="small" onClick={onRemoverCliente}>Remover Cliente</Button>
+          </Box>
+        ) : (
+          <Button variant="outlined" fullWidth onClick={onAbrirModalCliente}>Associar Cliente</Button>
+        )}
 
         <Button
-          variant="contained" color="success" size="large" onClick={() => onFinalizarVenda(metodoPagamento, totalVenda)}
+          variant="contained" color="success" size="large" onClick={handleFinalizar}
           disabled={carrinho.length === 0}
           sx={{ p: 1.5, fontSize: '1.1rem', fontWeight: 'bold' }}
         >

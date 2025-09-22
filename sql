@@ -58,6 +58,20 @@ CREATE TABLE venda_itens (
     produto_id INTEGER NOT NULL REFERENCES produtos(id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
+CREATE TABLE clientes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    cpf VARCHAR(14) UNIQUE,
+    telefone VARCHAR(20),
+    email VARCHAR(255),
+    endereco TEXT,
+    data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE vendas ADD COLUMN cliente_id INTEGER REFERENCES clientes(id) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE vendas ADD COLUMN desconto NUMERIC(10, 2) DEFAULT 0.00;
+ALTER TABLE vendas ADD COLUMN status VARCHAR(255) NOT NULL DEFAULT 'CONCLUIDA';
+
 -- PASSO 3: Insere o usuário Administrador/Gerente com o hash fornecido.
 INSERT INTO funcionarios (nome, email, senha_hash, cargo) VALUES 
 ('Admin', 'admin@pdv.com', '$2b$08$TTWDh6C40HrrsHrhSdRhX.xfH783Mdukqmyr35sPtuwATABxlJ8fO', 'gerente');

@@ -8,7 +8,6 @@ const Funcionario = require('../models/Funcionario');
 const Caixa = require('../models/Caixa');
 
 class VendaController {
-
   // Listar todas as vendas com detalhes
   async index(req, res) {
     const { page = 1, limit = 10, dataInicio, dataFim, metodoPagamento, vendaId } = req.query;
@@ -54,6 +53,39 @@ class VendaController {
     }
   }
 
+  async cancelar(req, res) {
+    const { id } = req.params;
+    const t = await sequelize.transaction();
+    try {
+      const venda = await Venda.findByPk(id, { include: [VendaItem], transaction: t });
+      if (!venda) {
+        return res.status(404).json({ error: 'Venda não encontrada.' });
+      }
+      if (venda.status === 'CANCELADA') {
+        return res.status(400).json({ error: 'Esta venda já foi cancelada.' });
+      }
+
+      // Estornar itens para o estoque
+      for (const item of venda.VendaItems) {
+        await Produto.increment('quantidade_estoque', {
+          by: item.quantidade,
+          where: { id: item.produto_id },
+          transaction: t
+        });
+      }
+
+      venda.status = 'CANCELADA';
+      await venda.save({ transaction: t });
+
+      await t.commit();
+      return res.json({ message: 'Venda cancelada e estoque estornado com sucesso!' });
+
+    } catch (error) {
+      await t.rollback();
+      return res.status(500).json({ error: 'Erro ao cancelar a venda.' });
+    }
+}
+
   async show(req, res) {
     try {
       const { id } = req.params;
@@ -88,8 +120,8 @@ class VendaController {
     const t = await sequelize.transaction();
 
     try {
-      const { valor_total, metodo_pagamento, itens } = req.body;
-      const funcionario_id = req.userId; // Vem do middleware de autenticação
+      const { valor_total, metodo_pagamento, itens, cliente_id, desconto = 0 } = req.body;
+      const funcionario_id = req.userId;
 
       // 1. Encontrar o caixa aberto para este funcionário
       const caixaAberto = await Caixa.findOne({
@@ -105,9 +137,11 @@ class VendaController {
       // 1. Cria o registro principal da venda
       const novaVenda = await Venda.create({
         funcionario_id,
-        valor_total,
+        valor_total, // Este é o valor final com desconto
         metodo_pagamento,
-        caixa_id: caixaAberto.id, // <-- PASSANDO O ID DO CAIXA
+        caixa_id: caixaAberto.id,
+        cliente_id, // Se houver cliente associado
+        desconto,   // Salva o valor do desconto para o histórico
       }, { transaction: t });
 
       // 2. Mapeia os itens do carrinho para o formato do banco de dados
@@ -138,8 +172,8 @@ class VendaController {
       await t.commit();
       
       return res.status(201).json({ message: 'Venda registrada com sucesso!', venda: novaVenda });
-
-    } catch (error) {
+    }
+     catch (error) {
       // Se qualquer erro ocorrer, desfaz todas as operações
       await t.rollback();
       return res.status(500).json({ error: 'Falha ao registrar a venda.', details: error.message });

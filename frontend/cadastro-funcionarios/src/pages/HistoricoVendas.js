@@ -1,9 +1,17 @@
-import React, { useState, useEffect } from 'react';
+// frontend/cadastro-funcionarios/src/pages/HistoricoVendas.js (VERSÃO VERIFICADA E CORRETA)
+
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import { Container, Typography, Accordion, AccordionSummary, AccordionDetails, List, ListItem, ListItemText, Grid, Box, CircularProgress, IconButton, Pagination, Paper, TextField, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import {
+  Container, Typography, Accordion, AccordionSummary, AccordionDetails, List, ListItem,
+  ListItemText, Grid, Box, CircularProgress, IconButton, Pagination, Paper, TextField,
+  Button, Select, MenuItem, FormControl, InputLabel, Chip, Tooltip
+} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PrintIcon from '@mui/icons-material/Print';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { toast } from 'react-toastify';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 function HistoricoVendas() {
   const [vendas, setVendas] = useState([]);
@@ -13,65 +21,80 @@ function HistoricoVendas() {
   const [filtros, setFiltros] = useState({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '' });
   const [filtrosAtivos, setFiltrosAtivos] = useState({});
   const [error, setError] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [vendaParaCancelar, setVendaParaCancelar] = useState(null);
+
+  const fetchHistorico = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get('/vendas', { 
+        params: { page, ...filtrosAtivos }
+      });
+      // Garante que o estado seja sempre um array
+      setVendas(response.data.vendas || []); 
+      setTotalPages(response.data.totalPages || 1);
+    } catch (err) {
+      toast.error("Não foi possível carregar o histórico.");
+      setError("Ocorreu um erro ao buscar os dados.");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, filtrosAtivos]);
 
   useEffect(() => {
-    const fetchHistorico = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await api.get('/vendas', { 
-          params: { page, ...filtrosAtivos }
-        });
-        setVendas(response.data.vendas);
-        setTotalPages(response.data.totalPages);
-      } catch (err) {
-        toast.error("Não foi possível carregar o histórico.");
-        setError("Ocorreu um erro ao buscar os dados.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchHistorico();
-  }, [page, filtrosAtivos]);
+  }, [fetchHistorico]);
+
+  const handleCancelarClick = (e, venda) => {
+    e.stopPropagation();
+    setVendaParaCancelar(venda);
+    setDialogOpen(true);
+  };
+
+  const handleConfirmCancelar = async () => {
+    if (!vendaParaCancelar) return;
+    try {
+      await api.put(`/vendas/${vendaParaCancelar.id}/cancelar`);
+      toast.success(`Venda #${vendaParaCancelar.id} cancelada com sucesso!`);
+      // ESTA LINHA É A CHAVE: ATUALIZA A TELA APÓS O SUCESSO.
+      fetchHistorico(); 
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erro ao cancelar a venda.');
+    } finally {
+      setDialogOpen(false);
+      setVendaParaCancelar(null);
+    }
+  };
 
   const handleFiltroChange = (e) => {
     setFiltros({ ...filtros, [e.target.name]: e.target.value });
   };
-
   const handleAplicarFiltros = () => {
     setPage(1);
     setFiltrosAtivos(filtros);
   };
-
   const handleLimparFiltros = () => {
     setPage(1);
     setFiltros({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '' });
     setFiltrosAtivos({});
   };
-  
   const handlePageChange = (event, value) => { setPage(value); };
 
   if (loading) return ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box> );
   if (error) return <Typography color="error" sx={{ textAlign: 'center', mt: 4 }}>{error}</Typography>;
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Typography variant="h4" component="h1" gutterBottom>Histórico de Vendas</Typography>
-
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          {/* ... Seus campos de filtro ... */}
           <Grid item xs={12} sm={4}><TextField name="vendaId" label="Buscar por ID" value={filtros.vendaId} onChange={handleFiltroChange} fullWidth size="small" /></Grid>
           <Grid item xs={12} sm={4}><TextField name="dataInicio" label="Data Início" type="date" value={filtros.dataInicio} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
           <Grid item xs={12} sm={4}><TextField name="dataFim" label="Data Fim" type="date" value={filtros.dataFim} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
           <Grid item xs={12} sm={4}><FormControl fullWidth size="small">
             <InputLabel>Método Pagto.</InputLabel>
-            <Select 
-              name="metodoPagamento" 
-              value={filtros.metodoPagamento} 
-              label="Método Pagto." 
-              onChange={handleFiltroChange}
-            >
+            <Select name="metodoPagamento" value={filtros.metodoPagamento} label="Método Pagto." onChange={handleFiltroChange}>
               <MenuItem value=""><em>Todos</em></MenuItem>
               <MenuItem value="Dinheiro">Dinheiro</MenuItem>
               <MenuItem value="Cartão de Crédito">Cartão de Crédito</MenuItem>
@@ -83,28 +106,19 @@ function HistoricoVendas() {
           <Grid item xs={12} sm={4}><Button variant="outlined" onClick={handleLimparFiltros} fullWidth>Limpar Filtros</Button></Grid>
         </Grid>
       </Paper>
-
+      
       {vendas.length === 0 && <Typography>Nenhuma venda encontrada para os filtros selecionados.</Typography>}
       
       {vendas.map(venda => (
         <Accordion key={venda.id}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={6}>
-                <Typography><strong>Venda #{venda.id}</strong> - {new Date(venda.data_venda).toLocaleString('pt-BR')}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={6} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <Grid item xs={12} sm={4}><Typography><strong>Venda #{venda.id}</strong></Typography><Typography variant="caption">{new Date(venda.data_venda).toLocaleString('pt-BR')}</Typography></Grid>
+              <Grid item xs={12} sm={3}><Chip label={venda.status} color={venda.status === 'CONCLUIDA' ? 'success' : 'error'} size="small" sx={{ fontWeight: 'bold' }} /></Grid>
+              <Grid item xs={12} sm={5} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
                 <Typography>Total: <strong>R$ {Number(venda.valor_total).toFixed(2)}</strong></Typography>
-                <IconButton 
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    window.open(`/recibo/${venda.id}`, '_blank');
-                  }} 
-                  color="primary" 
-                  sx={{ ml: 2 }}
-                >
-                  <PrintIcon />
-                </IconButton>
+                <Tooltip title="Imprimir Recibo"><IconButton onClick={(e) => { e.stopPropagation(); window.open(`/recibo/${venda.id}`, '_blank'); }} color="primary"><PrintIcon /></IconButton></Tooltip>
+                {venda.status === 'CONCLUIDA' && (<Tooltip title="Cancelar Venda"><IconButton onClick={(e) => handleCancelarClick(e, venda)} color="error"><CancelIcon /></IconButton></Tooltip>)}
               </Grid>
             </Grid>
           </AccordionSummary>
@@ -114,25 +128,16 @@ function HistoricoVendas() {
                 <Typography variant="subtitle1"><strong>Pagamento:</strong> {venda.metodo_pagamento}</Typography>
                 <Typography variant="subtitle2" sx={{ mt: 2 }}>Itens Vendidos:</Typography>
                 <List dense>
-                  {venda.VendaItems.map((item, index) => (
-                    <ListItem key={index}>
-                      <ListItemText 
-                        primary={`${item.quantidade}x ${item.Produto.nome}`}
-                        secondary={`(R$ ${Number(item.preco_unitario).toFixed(2)} cada)`}
-                      />
-                    </ListItem>
-                  ))}
+                  {venda.VendaItems.map((item, index) => ( <ListItem key={index}> <ListItemText primary={`${item.quantidade}x ${item.Produto.nome}`} secondary={`(R$ ${Number(item.preco_unitario).toFixed(2)} cada)`}/> </ListItem> ))}
                 </List>
               </Box>
             </AccordionDetails>
         </Accordion>
       ))}
 
-      {totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" />
-        </Box>
-      )}
+      {totalPages > 1 && (<Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" /></Box>)}
+      
+      <ConfirmDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onConfirm={handleConfirmCancelar} title="Confirmar Cancelamento" description={`Tem certeza que deseja cancelar a venda #${vendaParaCancelar?.id}? Esta ação não pode ser desfeita e o estoque dos produtos será estornado.`} />
     </Container>
   );
 }
