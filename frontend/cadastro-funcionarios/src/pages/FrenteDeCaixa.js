@@ -1,5 +1,6 @@
 // pdv-web-techpriv\frontend\cadastro-funcionarios\src\pages\FrenteDeCaixa.js
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'; 
+import Recibo from '../components/Recibo';
 import axios from 'axios';
 import api from '../services/api';
 import { useAuth } from '../contexts/auth';
@@ -33,6 +34,39 @@ function FrenteDeCaixa() {
   const [tipoMovimentacao, setTipoMovimentacao] = useState('');
   const [vendaFinalizada, setVendaFinalizada] = useState(null);
   const [lastAddedId, setLastAddedId] = useState(null);
+  const reciboRef = useRef(null);
+
+  const handleImprimirRecibo = () => {
+    const node = reciboRef.current;
+    if (node) {
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+
+      const styles = Array.from(document.styleSheets)
+        .map(styleSheet => {
+          try {
+            return Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('');
+          } catch (e) { return ''; }
+        }).join('\n');
+
+      const iframeDoc = iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(`
+        <html>
+          <head><title>Recibo</title><style>${styles}</style></head>
+          <body>${node.innerHTML}</body>
+        </html>
+      `);
+      iframeDoc.close();
+      
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      document.body.removeChild(iframe);
+      setVendaFinalizada(null); // Fecha o modal após a impressão
+    }
+  };
+
 
   useEffect(() => {
     const fetchProdutos = async () => {
@@ -341,11 +375,29 @@ function FrenteDeCaixa() {
       {/* Seus Modais (sem alteração no JSX, apenas na posição) */}
       <ManagerOverrideDialog open={overrideDialogOpen} onClose={() => setOverrideDialogOpen(false)} onConfirm={handleManagerAuthorize} error={overrideError} />
       <ModalMovimentacaoCaixa open={modalMovimentacaoOpen} onClose={handleCloseMovimentacaoModal} tipo={tipoMovimentacao} />
-      <Dialog open={!!vendaFinalizada} onClose={handleNovaVenda}>
+      <Dialog open={!!vendaFinalizada} onClose={() => setVendaFinalizada(null)}>
         <DialogTitle>Venda Finalizada com Sucesso!</DialogTitle>
-        <DialogContent><Typography>Venda ID: {vendaFinalizada?.id}</Typography><Typography variant="h5" sx={{ mt: 2 }}>Total: R$ {Number(vendaFinalizada?.valor_total).toFixed(2)}</Typography></DialogContent>
-        <DialogActions><Button onClick={handleNovaVenda}>Nova Venda</Button><Button onClick={() => { window.open(`/recibo/${vendaFinalizada.id}`, '_blank'); handleNovaVenda(); }} variant="contained" autoFocus>Imprimir Recibo</Button></DialogActions>
+        <DialogContent>
+          {vendaFinalizada && (
+            <>
+              <Typography>Venda ID: {vendaFinalizada.id}</Typography>
+              <Typography variant="h5" sx={{ mt: 2 }}>
+                Total: R$ {Number(vendaFinalizada.valor_total).toFixed(2)}
+              </Typography>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setVendaFinalizada(null)}>Nova Venda</Button>
+          {/* O BOTÃO AGORA CHAMA A NOVA FUNÇÃO DE IMPRESSÃO */}
+          <Button onClick={handleImprimirRecibo} variant="contained" autoFocus>
+            Imprimir Recibo
+          </Button>
+        </DialogActions>
       </Dialog>
+      <div style={{ display: 'none' }}>
+        {vendaFinalizada && <Recibo ref={reciboRef} venda={vendaFinalizada} />}
+      </div>
     </Box>
   );
 }

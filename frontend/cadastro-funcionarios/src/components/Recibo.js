@@ -1,26 +1,23 @@
-//pdv-web-techpriv\frontend\cadastro-funcionarios\src\components\Recibo.js
+// frontend/src/components/Recibo.js (VERSÃO FINAL COM forwardRef)
 import React from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableRow, Divider } from '@mui/material';
 
-// Usamos React.forwardRef para que a biblioteca de impressão possa acessar este componente
-const Recibo = ({ venda }) => {
+// Usamos React.forwardRef para permitir que o componente pai acesse o DOM deste componente
+const Recibo = React.forwardRef(({ venda }, ref) => {
   if (!venda) {
-    return null; // Continua retornando null se não houver venda
+    return null;
   }
 
-  // O 'ref' foi removido do <Box>
+  // Passamos a 'ref' para o elemento Box principal
   return (
-    <Box sx={{ padding: '20px', fontFamily: 'monospace', color: 'black' }}>
+    <Box ref={ref} sx={{ padding: '20px', fontFamily: 'monospace', color: 'black', width: '300px' }}>
       <Typography variant="h6" align="center">PDV - TechPriv</Typography>
       <Typography variant="body2" align="center">Comprovante de Venda</Typography>
       <Divider sx={{ my: 2 }} />
-      
       <Typography variant="body2">Venda ID: {venda.id}</Typography>
       <Typography variant="body2">Data: {new Date(venda.data_venda).toLocaleString('pt-BR')}</Typography>
       <Typography variant="body2">Operador: {venda.Funcionario?.nome || 'N/A'}</Typography>
-      
       <Divider sx={{ my: 2 }} />
-      
       <Table size="small">
         <TableBody>
           {venda.VendaItems.map((item, index) => (
@@ -32,23 +29,16 @@ const Recibo = ({ venda }) => {
           ))}
         </TableBody>
       </Table>
-
       <Divider sx={{ my: 2 }} />
-
       <Box sx={{ textAlign: 'right' }}>
-        <Typography variant="h6">
-          TOTAL: R$ {Number(venda.valor_total).toFixed(2)}
-        </Typography>
-        <Typography variant="body2">
-          Pagamento: {venda.metodo_pagamento}
-        </Typography>
+        <Typography variant="h6">TOTAL: R$ {Number(venda.valor_total).toFixed(2)}</Typography>
+        <Typography variant="body2">Pagamento: {venda.metodo_pagamento}</Typography>
       </Box>
-
       <Typography variant="caption" align="center" component="p" sx={{ mt: 4 }}>
         Obrigado pela preferência!
       </Typography>
     </Box>
   );
-};
+});
 
 export default Recibo;
