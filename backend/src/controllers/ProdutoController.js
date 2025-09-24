@@ -1,6 +1,8 @@
 // pdv-web-techpriv\backend\src\controllers\ProdutoController.js
 const Yup = require('yup');
 const Produto = require('../models/Produto');
+const EntradaEstoque = require('../models/EntradaEstoque');
+const Fornecedor = require('../models/Fornecedor');
 
 class ProdutoController {
   // --- MÉTODO INDEX ATUALIZADO ---
@@ -90,6 +92,30 @@ class ProdutoController {
       return res.status(204).send();
     } catch (error) {
       return res.status(500).json({ error: 'Erro ao deletar produto.' });
+    }
+  }
+  
+  async getDetalhes(req, res) {
+    try {
+      const { id } = req.params;
+      const produto = await Produto.findByPk(id, {
+        include: [
+          {
+            model: EntradaEstoque,
+            as: 'EntradaEstoques', // Use o alias se definido na associação
+            include: [{ model: Fornecedor, attributes: ['nome_fantasia'] }],
+            order: [['data_entrada', 'DESC']],
+          }
+        ]
+      });
+
+      if (!produto) {
+        return res.status(404).json({ error: 'Produto não encontrado.' });
+      }
+
+      return res.json(produto);
+    } catch (error) {
+      return res.status(500).json({ error: 'Erro ao buscar detalhes do produto.', details: error.message });
     }
   }
 }

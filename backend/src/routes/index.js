@@ -60,6 +60,7 @@ routes.delete('/funcionarios/:id', FuncionarioController.delete);
 routes.post('/produtos', ProdutoController.store);
 routes.put('/produtos/:id', ProdutoController.update);
 routes.delete('/produtos/:id', ProdutoController.delete);
+routes.get('/produtos/:id/detalhes', ProdutoController.getDetalhes);
 
 routes.get('/dashboard/summary', DashboardController.getSummary);
 routes.get('/dashboard/vendas-semanais', DashboardController.getVendasSemanais);

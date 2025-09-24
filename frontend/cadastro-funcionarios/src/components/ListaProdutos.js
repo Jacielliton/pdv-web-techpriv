@@ -6,6 +6,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 // 1. IMPORTE O NOVO ÍCONE
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 const customLocaleText = {
   noRowsLabel: 'Nenhum resultado encontrado',
@@ -13,7 +14,7 @@ const customLocaleText = {
 };
 
 // 2. ADICIONE 'onRegistrarEntrada' ÀS PROPRIEDADES DO COMPONENTE
-const ListaProdutos = ({ onEdit, onDeleteRequest, onRegistrarEntrada, produtos, loading }) => {
+const ListaProdutos = ({ onEdit, onDeleteRequest, onRegistrarEntrada, onVerDetalhes, produtos, loading }) => {
   const columns = [
     { field: 'id', headerName: 'ID', width: 90 },
     { field: 'nome', headerName: 'Nome', flex: 1, minWidth: 200 },
@@ -30,13 +31,20 @@ const ListaProdutos = ({ onEdit, onDeleteRequest, onRegistrarEntrada, produtos, 
     {
       field: 'actions',
       headerName: 'Ações',
-      width: 150, // Aumentei a largura para caber o novo botão
+      width: 180,
       align: 'center',
       headerAlign: 'center',
       sortable: false,
       renderCell: (params) => (
         <Box>
-          {/* 3. ADICIONE O NOVO BOTÃO E TOOLTIP AQUI */}
+          <Tooltip title="Ver Detalhes">
+            {/* Agora esta chamada é válida */}
+            <IconButton onClick={() => onVerDetalhes(params.row)} color="default">
+              <VisibilityIcon />
+            </IconButton>
+          </Tooltip>
+
+          {/* NOVO BOTÃO E TOOLTIP */}
           <Tooltip title="Registrar Entrada">
             <IconButton onClick={() => onRegistrarEntrada(params.row)} color="primary">
               <AddShoppingCartIcon />

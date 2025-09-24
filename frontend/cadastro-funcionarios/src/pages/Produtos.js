@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { Container, Typography, Box, Pagination, Paper, Divider } from '@mui/material';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart'; // Novo ícone
 import ModalEntradaEstoque from '../components/ModalEntradaEstoque';
+import ModalDetalhesProduto from '../components/ModalDetalhesProduto';
 
 
 function Produtos() {
@@ -23,10 +24,27 @@ function Produtos() {
   const [modalEntradaOpen, setModalEntradaOpen] = useState(false);
   const [produtoSelecionado, setProdutoSelecionado] = useState(null);
 
+  const [modalDetalhesOpen, setModalDetalhesOpen] = useState(false);
+  const [produtoDetalhes, setProdutoDetalhes] = useState(null);
+
   const handleOpenModalEntrada = (produto) => {
     setProdutoSelecionado(produto);
     setModalEntradaOpen(true);
   };
+
+  const handleOpenDetalhes = async (produto) => {
+    try {
+      setLoading(true);
+      const response = await api.get(`/produtos/${produto.id}/detalhes`);
+      setProdutoDetalhes(response.data);
+      setModalDetalhesOpen(true);
+    } catch (error) {
+      toast.error('Erro ao buscar detalhes do produto.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const fetchProdutos = async (currentPage = 1) => {
     setLoading(true);
@@ -104,6 +122,7 @@ function Produtos() {
           produtos={produtos}
           loading={loading}
           onRegistrarEntrada={handleOpenModalEntrada}
+          onVerDetalhes={handleOpenDetalhes}
         />
       </Paper>
       
@@ -129,6 +148,12 @@ function Produtos() {
         onClose={() => setModalEntradaOpen(false)}
         produto={produtoSelecionado}
         onSucesso={handleSuccess} // Reutiliza sua função de sucesso para recarregar a lista
+      />
+      
+      <ModalDetalhesProduto
+        open={modalDetalhesOpen}
+        onClose={() => setModalDetalhesOpen(false)}
+        produto={produtoDetalhes}
       />
     </Container>
   );
