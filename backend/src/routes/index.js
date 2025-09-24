@@ -70,6 +70,8 @@ routes.get('/dashboard/low-stock', DashboardController.getLowStockProducts);
 routes.get('/caixas/historico', CaixaController.getHistorico);
 routes.get('/caixas/movimentacoes', CaixaController.getMovimentacoes);
 routes.get('/relatorios/vendas', RelatorioController.getRelatorioVendas);
+routes.get('/relatorios/lucratividade', RelatorioController.getRelatorioLucratividade);
+
 
 // ROTAS DE CLIENTES
 routes.get('/clientes', ClienteController.index);

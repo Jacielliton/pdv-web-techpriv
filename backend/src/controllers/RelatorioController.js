@@ -6,6 +6,8 @@ const VendaItem = require('../models/VendaItem');
 const Produto = require('../models/Produto');
 
 class RelatorioController {
+  
+  // Seu método getRelatorioVendas permanece o mesmo
   async getRelatorioVendas(req, res) {
     // Pega as datas da query string (ex: /vendas?data_inicio=2025-09-01&data_fim=2025-09-18)
     const { data_inicio, data_fim } = req.query;
@@ -86,6 +88,69 @@ class RelatorioController {
     } catch (error) {
       console.error("Erro ao gerar relatório de vendas:", error);
       return res.status(500).json({ error: 'Erro ao gerar relatório.', details: error.message });
+    }
+  }
+
+  // ===================================================================
+  // NOVO MÉTODO PARA O RELATÓRIO DE LUCRATIVIDADE
+  // ===================================================================
+  async getRelatorioLucratividade(req, res) {
+    const { data_inicio, data_fim } = req.query;
+    if (!data_inicio || !data_fim) {
+      return res.status(400).json({ error: 'As datas de início e fim são obrigatórias.' });
+    }
+    const dataFimAjustada = new Date(data_fim);
+    dataFimAjustada.setHours(23, 59, 59, 999);
+    const whereClauseVendas = { data_venda: { [Op.between]: [new Date(data_inicio), dataFimAjustada] } };
+
+    try {
+      const itensVendidos = await VendaItem.findAll({
+        include: [
+          { model: Produto, attributes: ['nome', 'preco_custo'] },
+          { model: Venda, attributes: [], where: whereClauseVendas },
+        ],
+        raw: true,
+      });
+
+      let faturamentoBruto = 0;
+      let custoTotal = 0;
+      const produtosCalculados = {};
+
+      itensVendidos.forEach(item => {
+        const precoVenda = parseFloat(item.preco_unitario);
+        const precoCusto = parseFloat(item['Produto.preco_custo']) || 0;
+        const quantidade = item.quantidade;
+        const nomeProduto = item['Produto.nome'];
+
+        faturamentoBruto += precoVenda * quantidade;
+        custoTotal += precoCusto * quantidade;
+
+        if (!produtosCalculados[nomeProduto]) {
+          produtosCalculados[nomeProduto] = { nome: nomeProduto, lucroTotal: 0 };
+        }
+        produtosCalculados[nomeProduto].lucroTotal += (precoVenda - precoCusto) * quantidade;
+      });
+
+      const lucroBruto = faturamentoBruto - custoTotal;
+      const margemLucro = faturamentoBruto > 0 ? (lucroBruto / faturamentoBruto) * 100 : 0;
+      
+      const rankingProdutos = Object.values(produtosCalculados).sort((a, b) => b.lucroTotal - a.lucroTotal);
+
+      const relatorio = {
+        resumo: {
+          faturamentoBruto,
+          custoTotal,
+          lucroBruto,
+          margemLucro,
+        },
+        top5MaisLucrativos: rankingProdutos.slice(0, 5),
+        top5MenosLucrativos: rankingProdutos.slice(-5).reverse(),
+      };
+
+      return res.json(relatorio);
+    } catch (error) {
+      console.error("Erro ao gerar relatório de lucratividade:", error);
+      return res.status(500).json({ error: 'Erro ao gerar relatório de lucratividade.', details: error.message });
     }
   }
 }
