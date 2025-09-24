@@ -7,6 +7,7 @@ const Produto = require('../models/Produto');
 const Funcionario = require('../models/Funcionario');
 const Caixa = require('../models/Caixa');
 const Cliente = require('../models/Cliente');
+const ContaReceber = require('../models/ContaReceber');
 
 class VendaController {
   // Listar todas as vendas com detalhes
@@ -129,12 +130,15 @@ class VendaController {
   
   // Cadastrar uma nova venda
   async store(req, res) {
-    // Inicia uma transação
-    const t = await sequelize.transaction();
+  const t = await sequelize.transaction();
+  try {
+    const { valor_total, metodo_pagamento, itens, cliente_id, desconto = 0 } = req.body;
+    const funcionario_id = req.userId;
 
-    try {
-      const { valor_total, metodo_pagamento, itens, cliente_id, desconto = 0 } = req.body;
-      const funcionario_id = req.userId;
+    if (metodo_pagamento === 'A Prazo' && !cliente_id) {
+      await t.rollback();
+      return res.status(400).json({ error: 'Um cliente deve ser selecionado para vendas a prazo.' });
+    }
 
       // 1. Encontrar o caixa aberto para este funcionário
       const caixaAberto = await Caixa.findOne({
@@ -156,6 +160,16 @@ class VendaController {
         cliente_id, // Se houver cliente associado
         desconto,   // Salva o valor do desconto para o histórico
       }, { transaction: t });
+
+      // Se a venda for "A Prazo", cria a conta a receber
+    if (metodo_pagamento === 'A Prazo') {
+      await ContaReceber.create({
+        venda_id: novaVenda.id,
+        cliente_id,
+        valor_total,
+        status: 'ABERTA'
+      }, { transaction: t });
+    }
 
       // 2. Mapeia os itens do carrinho para o formato do banco de dados
       const itensDaVenda = itens.map(item => ({

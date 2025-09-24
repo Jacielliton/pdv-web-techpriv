@@ -101,6 +101,28 @@ CREATE TABLE entradas_estoque (
 -- O valor padrão (DEFAULT 10) é um exemplo, você pode ajustar conforme sua necessidade.
 ALTER TABLE produtos ADD COLUMN estoque_minimo INTEGER NOT NULL DEFAULT 10;
 
+-- Cria a tabela principal para contas a receber (dívidas)
+CREATE TABLE contas_receber (
+    id SERIAL PRIMARY KEY,
+    valor_total NUMERIC(10, 2) NOT NULL,
+    valor_pago NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(50) NOT NULL DEFAULT 'ABERTA', -- Ex: ABERTA, PAGA_PARCIALMENTE, PAGA
+    data_vencimento DATE,
+    venda_id INTEGER NOT NULL REFERENCES vendas(id) ON DELETE CASCADE,
+    cliente_id INTEGER NOT NULL REFERENCES clientes(id) ON DELETE CASCADE
+);
+
+-- Cria uma tabela para registrar os pagamentos de cada conta
+CREATE TABLE pagamentos_conta (
+    id SERIAL PRIMARY KEY,
+    valor NUMERIC(10, 2) NOT NULL,
+    metodo_pagamento VARCHAR(255) NOT NULL,
+    data_pagamento TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    conta_id INTEGER NOT NULL REFERENCES contas_receber(id) ON DELETE CASCADE,
+    funcionario_id INTEGER NOT NULL REFERENCES funcionarios(id) ON DELETE RESTRICT,
+    caixa_id INTEGER NOT NULL REFERENCES caixas(id) ON DELETE RESTRICT
+);
+
 -- PASSO 3: Insere o usuário Administrador/Gerente com o hash fornecido.
 INSERT INTO funcionarios (nome, email, senha_hash, cargo) VALUES 
 ('Admin', 'admin@pdv.com', '$2b$08$TTWDh6C40HrrsHrhSdRhX.xfH783Mdukqmyr35sPtuwATABxlJ8fO', 'gerente');

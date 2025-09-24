@@ -12,10 +12,12 @@ const RelatorioController = require('../controllers/RelatorioController'); // 1.
 const ClienteController = require('../controllers/ClienteController');
 const FornecedorController = require('../controllers/FornecedorController');
 const EstoqueController = require('../controllers/EstoqueController');
+const ContasReceberController = require('../controllers/ContasReceberController');
 
 // Middlewares
 const authMiddleware = require('../middlewares/auth');
 const authManagerMiddleware = require('../middlewares/authManager');
+
 
 const routes = new Router();
 
@@ -43,7 +45,8 @@ routes.post('/caixa/abrir', CaixaController.abrirCaixa);
 routes.post('/caixa/movimentacao', CaixaController.registrarMovimentacao);
 routes.get('/caixa/resumo', CaixaController.getResumo);
 routes.post('/caixa/fechar', CaixaController.fecharCaixa); // <--- MOVIDO PARA CIMA
-
+routes.get('/clientes/:clienteId/contas', ContasReceberController.index);
+routes.post('/contas-receber/:contaId/pagar', ContasReceberController.registrarPagamento);
 
 
 // ===================================================================

@@ -121,6 +121,9 @@ const PainelVenda = React.forwardRef(({
             <MenuItem value="Cartão de Crédito">Cartão de Crédito</MenuItem>
             <MenuItem value="Cartão de Débito">Cartão de Débito</MenuItem>
             <MenuItem value="Pix">Pix</MenuItem>
+            <MenuItem value="A Prazo" disabled={!clienteSelecionado}>
+              A Prazo (Fiado)
+          </MenuItem>
           </Select>
         </FormControl>            
       
