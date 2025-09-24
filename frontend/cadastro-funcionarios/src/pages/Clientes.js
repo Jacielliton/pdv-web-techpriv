@@ -5,11 +5,13 @@ import { toast } from 'react-toastify';
 import { 
   Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
   Paper, IconButton, Box, Pagination, CircularProgress, Button, Tabs, Tab,
-  Grid, TextField, FormControlLabel, Switch // Novos imports para os filtros
+  Grid, TextField, FormControlLabel, Switch, Tooltip // 1. IMPORTE O Tooltip
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+// 2. IMPORTE OS NOVOS ÍCONES
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ClienteForm from '../components/ClienteForm';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ExtratoCliente from '../components/ExtratoCliente'; 
@@ -26,8 +28,6 @@ const Clientes = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  
-  // NOVOS ESTADOS PARA OS FILTROS
   const [filtros, setFiltros] = useState({ nome: '', comDebitos: false });
   const [filtrosAtivos, setFiltrosAtivos] = useState({});
 
@@ -71,8 +71,9 @@ const Clientes = () => {
     }
   };
 
-  const handleVerDetalhes = (cliente) => {
+  const handleVerDetalhes = (cliente, abaInicial = 0) => {
     setClienteSelecionado(cliente);
+    setAba(abaInicial); // Define a aba inicial
     setView('details');
   };
 
@@ -199,7 +200,7 @@ const Clientes = () => {
               </TableHead>
               <TableBody>
                 {clientes.map((cliente) => (
-                  <TableRow key={cliente.id} hover sx={{ cursor: 'pointer' }} onClick={() => handleVerDetalhes(cliente)}>
+                  <TableRow key={cliente.id} hover>
                     <TableCell>{cliente.nome}</TableCell>
                     <TableCell>{cliente.cpf}</TableCell>
                     <TableCell>{cliente.telefone}</TableCell>
@@ -207,8 +208,23 @@ const Clientes = () => {
                         {formatCurrency(cliente.saldo_devedor)}
                     </TableCell>
                     <TableCell align="center">
-                      <IconButton onClick={(e) => { e.stopPropagation(); handleVerDetalhes(cliente); }}><EditIcon /></IconButton>
-                      <IconButton onClick={(e) => { e.stopPropagation(); handleDeleteClick(cliente); }}><DeleteIcon color="error" /></IconButton>
+                      <Tooltip title="Editar Dados Cadastrais">
+                        {/* Chama a função para abrir na aba 0 (Dados) */}
+                        <IconButton onClick={() => handleVerDetalhes(cliente, 0)}>
+                          <ManageAccountsIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Ver Extrato de Débitos">
+                        {/* Chama a função para abrir na aba 1 (Extrato) */}
+                        <IconButton onClick={() => handleVerDetalhes(cliente, 1)} color="primary">
+                          <ReceiptLongIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Excluir Cliente">
+                        <IconButton onClick={() => handleDeleteClick(cliente)}>
+                          <DeleteIcon color="error" />
+                        </IconButton>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}
