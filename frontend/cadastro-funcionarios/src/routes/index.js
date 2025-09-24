@@ -48,8 +48,7 @@ const Routes = () => {
               <Route path="/historico" element={<HistoricoVendas />} />
               <Route path="/historico-caixas" element={<HistoricoCaixas />} />
               <Route path="/historico-movimentacoes" element={<HistoricoMovimentacoes />} />
-              <Route path="/relatorios" element={<Relatorios />} />
-              <Route path="/clientes" element={<Clientes />} />
+              <Route path="/relatorios" element={<Relatorios />} />              
               <Route path="/fornecedores" element={<Fornecedores />} />
             </>
           )}
@@ -58,6 +57,7 @@ const Routes = () => {
           <Route path="/venda" element={<FrenteDeCaixa />} />
           <Route path="/fechamento-caixa" element={<FechamentoCaixa />} />
           <Route path="/historico" element={<HistoricoVendas />} />
+          <Route path="/clientes" element={<Clientes />} />
           
           {/* Rota "catch-all" para redirecionar qualquer outra URL inválida */}
           <Route path="*" element={<Navigate to={isManager ? "/" : "/venda"} replace />} />

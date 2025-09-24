@@ -51,6 +51,13 @@ routes.post('/contas-receber/:contaId/pagar', ContasReceberController.registrarP
 routes.get('/clientes', ClienteController.index);
 // ===================================================================
 
+// ===================================================================
+// NOVAS ROTAS LIBERADAS PARA O CAIXA
+// ===================================================================
+routes.post('/clientes', ClienteController.store); // Permite CADASTRAR cliente
+routes.post('/contas-receber/:contaId/pagar', ContasReceberController.registrarPagamento);
+// ===================================================================
+
 
 // ===================================================================
 // APLICA O MIDDLEWARE DE AUTORIZAÇÃO DE GERENTE
@@ -79,9 +86,8 @@ routes.get('/relatorios/lucratividade', RelatorioController.getRelatorioLucrativ
 
 // ROTAS DE GERENCIAMENTO DE CLIENTES (permanecem exclusivas para gerentes)
 routes.get('/clientes/:id', ClienteController.show);
-routes.post('/clientes', ClienteController.store);
-routes.put('/clientes/:id', ClienteController.update);
-routes.delete('/clientes/:id', ClienteController.destroy);
+routes.put('/clientes/:id', ClienteController.update);   // EDITAR continua sendo apenas para gerente
+routes.delete('/clientes/:id', ClienteController.destroy); // DELETAR continua sendo apenas para gerente
 
 // ROTAS DE FORNECEDORES E ESTOQUE
 routes.get('/fornecedores', FornecedorController.index);

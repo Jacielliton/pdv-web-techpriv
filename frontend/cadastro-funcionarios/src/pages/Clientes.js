@@ -15,6 +15,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import ClienteForm from '../components/ClienteForm';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ExtratoCliente from '../components/ExtratoCliente'; 
+import { useAuth } from '../contexts/auth';
 
 const formatCurrency = (value) => `R$ ${Number(value || 0).toFixed(2)}`;
 
@@ -30,6 +31,7 @@ const Clientes = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [filtros, setFiltros] = useState({ nome: '', comDebitos: false });
   const [filtrosAtivos, setFiltrosAtivos] = useState({});
+  const { isManager } = useAuth()
 
   const fetchClientes = useCallback(async () => {
     setLoading(true);
@@ -133,22 +135,26 @@ const Clientes = () => {
         <Paper>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs value={aba} onChange={(e, newValue) => setAba(newValue)} variant="fullWidth">
-              <Tab label="Dados Cadastrais" />
+              {/* A aba de DADOS CADASTRAIS só aparece para o gerente */}
+              {isManager && <Tab label="Dados Cadastrais" />}
               <Tab label="Extrato de Débitos" />
             </Tabs>
           </Box>
           <Box sx={{ p: 3 }}>
-            {aba === 0 && <ClienteForm onSucesso={handleSucessoForm} clienteParaEditar={clienteSelecionado} limparEdicao={() => {}} />}
-            {aba === 1 && <ExtratoCliente clienteId={clienteSelecionado.id} />}
+            {aba === 0 && isManager && <ClienteForm onSucesso={handleSucessoForm} clienteParaEditar={clienteSelecionado} />}
+            {/* O extrato é a aba padrão (0) para o caixa, e a aba 1 para o gerente */}
+            {aba === (isManager ? 1 : 0) && <ExtratoCliente clienteId={clienteSelecionado.id} />}
           </Box>
         </Paper>
       </Box>
     );
   }
 
+  // 4. ATUALIZE A TABELA DE CLIENTES
   return (
     <Box>
       <Typography variant="h4" gutterBottom>Gestão de Clientes</Typography>
+      {/* O formulário de cadastro agora está visível para todos */}
       <ClienteForm onSucesso={handleSucessoForm} />
       
       <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>Clientes Cadastrados</Typography>
@@ -194,7 +200,7 @@ const Clientes = () => {
                   <TableCell>Nome</TableCell>
                   <TableCell>CPF</TableCell>
                   <TableCell>Telefone</TableCell>
-                  <TableCell align="right">Saldo Devedor</TableCell> {/* NOVA COLUNA */}
+                  <TableCell align="right">Saldo Devedor</TableCell>
                   <TableCell align="center">Ações</TableCell>
                 </TableRow>
               </TableHead>
@@ -208,23 +214,21 @@ const Clientes = () => {
                         {formatCurrency(cliente.saldo_devedor)}
                     </TableCell>
                     <TableCell align="center">
-                      <Tooltip title="Editar Dados Cadastrais">
-                        {/* Chama a função para abrir na aba 0 (Dados) */}
-                        <IconButton onClick={() => handleVerDetalhes(cliente, 0)}>
-                          <ManageAccountsIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Ver Extrato de Débitos">
-                        {/* Chama a função para abrir na aba 1 (Extrato) */}
-                        <IconButton onClick={() => handleVerDetalhes(cliente, 1)} color="primary">
-                          <ReceiptLongIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Excluir Cliente">
-                        <IconButton onClick={() => handleDeleteClick(cliente)}>
-                          <DeleteIcon color="error" />
-                        </IconButton>
-                      </Tooltip>
+                      {/* O gerente vê todos os botões */}
+                      {isManager ? (
+                        <>
+                          <Tooltip title="Editar Dados Cadastrais"><IconButton onClick={() => handleVerDetalhes(cliente, 0)}><ManageAccountsIcon /></IconButton></Tooltip>
+                          <Tooltip title="Ver Extrato de Débitos"><IconButton onClick={() => handleVerDetalhes(cliente, 1)} color="primary"><ReceiptLongIcon /></IconButton></Tooltip>
+                          <Tooltip title="Excluir Cliente"><IconButton onClick={(e) => { e.stopPropagation(); handleDeleteClick(cliente); }}><DeleteIcon color="error" /></IconButton></Tooltip>
+                        </>
+                      ) : (
+                        // O caixa vê apenas o botão de extrato
+                        <Tooltip title="Ver Extrato de Débitos">
+                          <IconButton onClick={() => handleVerDetalhes(cliente, 0)} color="primary">
+                            <ReceiptLongIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

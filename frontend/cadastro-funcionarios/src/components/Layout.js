@@ -51,7 +51,7 @@ const Layout = () => {
     { text: 'Relatórios', icon: <AssessmentIcon />, path: '/relatorios', managerOnly: true },
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/', managerOnly: true },
     { text: 'Funcionários', icon: <PeopleIcon />, path: '/funcionarios', managerOnly: true },
-    { text: 'Clientes', icon: <SupervisorAccountIcon />, path: '/clientes', managerOnly: true }, 
+    { text: 'Clientes', icon: <SupervisorAccountIcon />, path: '/clientes', managerOnly: false }, 
     { text: 'Fornecedores', icon: <BusinessIcon />, path: '/fornecedores', managerOnly: true },
     { text: 'Produtos', icon: <InventoryIcon />, path: '/produtos', managerOnly: true },
   ];
