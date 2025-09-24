@@ -2,21 +2,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { toast } from 'react-toastify';
-// 1. ADICIONE OS IMPORTS QUE FALTAVAM AQUI
 import { 
   Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
-  Paper, IconButton, Box, Pagination, CircularProgress, Button, Tabs, Tab 
+  Paper, IconButton, Box, Pagination, CircularProgress, Button, Tabs, Tab,
+  Grid, TextField, FormControlLabel, Switch // Novos imports para os filtros
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // Import do ícone de voltar
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ClienteForm from '../components/ClienteForm';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ExtratoCliente from '../components/ExtratoCliente'; 
 
+const formatCurrency = (value) => `R$ ${Number(value || 0).toFixed(2)}`;
+
 const Clientes = () => {
   const [clientes, setClientes] = useState([]);
-  const [view, setView] = useState('list'); // 'list' ou 'details'
+  const [view, setView] = useState('list');
   const [clienteSelecionado, setClienteSelecionado] = useState(null);
   const [aba, setAba] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -24,11 +26,16 @@ const Clientes = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  
+  // NOVOS ESTADOS PARA OS FILTROS
+  const [filtros, setFiltros] = useState({ nome: '', comDebitos: false });
+  const [filtrosAtivos, setFiltrosAtivos] = useState({});
 
-  const fetchClientes = useCallback(async (currentPage) => {
+  const fetchClientes = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.get('/clientes', { params: { page: currentPage } });
+      // Envia os filtros e a página para a API
+      const response = await api.get('/clientes', { params: { page, ...filtrosAtivos } });
       setClientes(response.data.clientes || []);
       setTotalPages(response.data.totalPages || 1);
     } catch (error) { 
@@ -36,13 +43,17 @@ const Clientes = () => {
     } finally { 
       setLoading(false); 
     }
-  }, []);
+  }, [page, filtrosAtivos]);
 
   useEffect(() => {
-    if (view === 'list') {
-      fetchClientes(page);
-    }
-  }, [view, page, fetchClientes]);
+    // Debounce: espera 300ms após o usuário parar de digitar para fazer a busca
+    const timerId = setTimeout(() => {
+        if (view === 'list') {
+            fetchClientes();
+        }
+    }, 300);
+    return () => clearTimeout(timerId);
+  }, [view, page, filtrosAtivos, fetchClientes]);
 
   const handleSucessoForm = async (data, isEditing) => {
     try {
@@ -97,6 +108,19 @@ const Clientes = () => {
   const handlePageChange = (event, value) => {
     setPage(value);
   };
+  
+  const handleFiltroChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFiltros(prevFiltros => ({
+        ...prevFiltros,
+        [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleAplicarFiltros = () => {
+    setPage(1); // Sempre volta para a primeira página ao filtrar
+    setFiltrosAtivos(filtros);
+  };
 
  if (view === 'details') {
     return (
@@ -125,7 +149,41 @@ const Clientes = () => {
     <Box>
       <Typography variant="h4" gutterBottom>Gestão de Clientes</Typography>
       <ClienteForm onSucesso={handleSucessoForm} />
+      
       <Typography variant="h5" gutterBottom sx={{ mt: 4 }}>Clientes Cadastrados</Typography>
+      
+      {/* PAINEL DE FILTROS */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6}>
+                <TextField 
+                    name="nome" 
+                    label="Buscar por nome..." 
+                    value={filtros.nome}
+                    onChange={handleFiltroChange}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAplicarFiltros()}
+                    fullWidth 
+                    size="small" 
+                />
+            </Grid>
+            <Grid item xs={12} sm={3}>
+                <FormControlLabel
+                    control={
+                        <Switch 
+                            checked={filtros.comDebitos} 
+                            onChange={handleFiltroChange} 
+                            name="comDebitos"
+                        />
+                    }
+                    label="Mostrar apenas com débitos"
+                />
+            </Grid>
+            <Grid item xs={12} sm={3}>
+                <Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Buscar</Button>
+            </Grid>
+        </Grid>
+      </Paper>
+
       {loading ? <CircularProgress /> : (
         <>
           <TableContainer component={Paper}>
@@ -135,7 +193,7 @@ const Clientes = () => {
                   <TableCell>Nome</TableCell>
                   <TableCell>CPF</TableCell>
                   <TableCell>Telefone</TableCell>
-                  <TableCell>Email</TableCell>
+                  <TableCell align="right">Saldo Devedor</TableCell> {/* NOVA COLUNA */}
                   <TableCell align="center">Ações</TableCell>
                 </TableRow>
               </TableHead>
@@ -145,7 +203,9 @@ const Clientes = () => {
                     <TableCell>{cliente.nome}</TableCell>
                     <TableCell>{cliente.cpf}</TableCell>
                     <TableCell>{cliente.telefone}</TableCell>
-                    <TableCell>{cliente.email}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 'bold', color: cliente.saldo_devedor > 0 ? 'error.main' : 'inherit' }}>
+                        {formatCurrency(cliente.saldo_devedor)}
+                    </TableCell>
                     <TableCell align="center">
                       <IconButton onClick={(e) => { e.stopPropagation(); handleVerDetalhes(cliente); }}><EditIcon /></IconButton>
                       <IconButton onClick={(e) => { e.stopPropagation(); handleDeleteClick(cliente); }}><DeleteIcon color="error" /></IconButton>
@@ -155,7 +215,7 @@ const Clientes = () => {
               </TableBody>
             </Table>
           </TableContainer>
-          {totalPages > 1 && ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><Pagination count={totalPages} page={page} onChange={(e, val) => setPage(val)} color="primary" /></Box> )}
+          {totalPages > 1 && ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" /></Box> )}
         </>
       )}
       <ConfirmDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onConfirm={handleConfirmDelete} title="Confirmar Exclusão" description={`Tem certeza que deseja excluir o cliente "${clienteParaDeletar?.nome}"?`} />

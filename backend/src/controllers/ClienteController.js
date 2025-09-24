@@ -1,30 +1,52 @@
 // backend/src/controllers/ClienteController.js (VERSÃO COMPLETA)
-const { Op } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize'); // Importe as funções do Sequelize
 const Cliente = require('../models/Cliente');
+const ContaReceber = require('../models/ContaReceber');
 
 class ClienteController {
   async index(req, res) {
-    // 1. RECEBE OS PARÂMETROS DE PAGINAÇÃO
-    const { page = 1, limit = 10, nome } = req.query;
+    const { page = 1, limit = 10, nome, comDebitos } = req.query; // Novos filtros: nome, comDebitos
     const offset = parseInt(limit, 10) * (parseInt(page, 10) - 1);
 
-    const whereClause = nome ? { nome: { [Op.iLike]: `%${nome}%` } } : {};
+    const whereClause = {};
+    if (nome) {
+      whereClause.nome = { [Op.iLike]: `%${nome}%` };
+    }
+
+    // Subconsulta para calcular o saldo devedor de cada cliente
+    const saldoDevedorSubquery = `(
+      SELECT SUM(valor_total - valor_pago)
+      FROM contas_receber
+      WHERE contas_receber.cliente_id = "Cliente"."id"
+      AND contas_receber.status != 'PAGA'
+    )`;
     
+    // O 'having' é um filtro que se aplica DEPOIS da agregação (SUM)
+    const havingClause = comDebitos === 'true'
+      ? literal(`${saldoDevedorSubquery} > 0`)
+      : {};
+
     try {
-      // 2. USA findAndCountAll PARA CONTAR O TOTAL DE REGISTROS
       const { count, rows: clientes } = await Cliente.findAndCountAll({
+        attributes: {
+          include: [
+            [literal(saldoDevedorSubquery), 'saldo_devedor']
+          ]
+        },
         where: whereClause,
+        having: havingClause,
         order: [['nome', 'ASC']],
         limit: parseInt(limit, 10),
         offset,
+        group: ['Cliente.id'], // Agrupamos para que a contagem e o saldo funcionem
         distinct: true
       });
 
-      // 3. CALCULA O TOTAL DE PÁGINAS E ENVIA NA RESPOSTA
-      const totalPages = Math.ceil(count / parseInt(limit, 10));
+      const totalPages = Math.ceil(count.length / parseInt(limit, 10)); // A contagem com 'group' retorna um array
       return res.json({ clientes, totalPages, currentPage: parseInt(page, 10) });
 
     } catch (error) {
+      console.error("Erro ao listar clientes:", error);
       return res.status(500).json({ error: "Erro ao listar clientes" });
     }
   }
