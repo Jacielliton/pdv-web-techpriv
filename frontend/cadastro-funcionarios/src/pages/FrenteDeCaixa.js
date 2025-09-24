@@ -196,7 +196,8 @@ function FrenteDeCaixa() {
         termoBusca={termoBusca}
         onTermoBuscaChange={setTermoBusca}
         onAdicionarAoCarrinho={adicionarAoCarrinho}
-        ref={buscaInputRef} // Passando a ref para o componente filho
+        // CORREÇÃO: A ref agora é passada corretamente usando React.forwardRef
+        ref={buscaInputRef} 
       />
       
       <PainelVenda

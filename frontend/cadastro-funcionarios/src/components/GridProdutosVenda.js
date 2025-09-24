@@ -1,11 +1,17 @@
-// frontend/src/components/GridProdutosVenda.js
+// frontend/src/components/GridProdutosVenda.js (VERSÃO FINAL E CORRIGIDA)
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Grid, TextField, Paper, Box } from '@mui/material';
 import ProdutoCard from './ProdutoCard';
+import { toast } from 'react-toastify';
 
-const GridProdutosVenda = ({ produtos, onAdicionarAoCarrinho }) => {
-  const [termoBusca, setTermoBusca] = useState('');
+// A sintaxe correta envolve declarar o componente com forwardRef primeiro
+const GridProdutosVenda = React.forwardRef(({ 
+  produtos, 
+  termoBusca, 
+  onTermoBuscaChange, 
+  onAdicionarAoCarrinho 
+}, ref) => {
 
   const produtosFiltrados = useMemo(() => {
     if (!termoBusca) return produtos;
@@ -15,14 +21,32 @@ const GridProdutosVenda = ({ produtos, onAdicionarAoCarrinho }) => {
     );
   }, [termoBusca, produtos]);
 
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && termoBusca.trim() !== '') {
+      event.preventDefault();
+      
+      const produtoEncontrado = produtos.find(p => p.codigo_barras === termoBusca.trim());
+
+      if (produtoEncontrado) {
+        onAdicionarAoCarrinho(produtoEncontrado);
+        onTermoBuscaChange('');
+      } else {
+        toast.warn('Produto não encontrado pelo código de barras.');
+      }
+    }
+  };
+
   return (
     <Box sx={{ flex: 7, display: 'flex', flexDirection: 'column', gap: 2 }}>
       <TextField
         fullWidth
-        label="Buscar Produto por nome ou código de barras"
+        label="Buscar Produto (F4) ou Ler Código de Barras"
         variant="outlined"
         value={termoBusca}
-        onChange={e => setTermoBusca(e.target.value)}
+        onChange={e => onTermoBuscaChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        inputRef={ref}
+        autoFocus
       />
       <Paper sx={{ flex: 1, p: 2, overflowY: 'auto' }}>
         <Grid container spacing={2}>
@@ -35,6 +59,7 @@ const GridProdutosVenda = ({ produtos, onAdicionarAoCarrinho }) => {
       </Paper>
     </Box>
   );
-};
+});
 
+// E então exportar a constante
 export default GridProdutosVenda;

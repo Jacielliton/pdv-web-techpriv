@@ -1,5 +1,4 @@
 // frontend/src/components/PainelVenda.js
-
 import React, { useState, useEffect } from 'react';
 import {
   Paper, Typography, Divider, TableContainer, Table, TableHead, TableRow, TableCell, TableBody,
@@ -9,11 +8,12 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 
-const PainelVenda = ({
+// 1. ENVOLVEMOS O COMPONENTE COM React.forwardRef
+const PainelVenda = React.forwardRef(({
   carrinho, subtotal, desconto, totalVenda, clienteSelecionado, lastAddedId,
   onQuantidadeChange, onRemoverDoCarrinho, onFinalizarVenda, onAbrirModalMovimentacao,
   onAbrirModalCliente, onRemoverCliente, onAbrirModalDesconto, onRemoverDesconto
-}) => {
+}, ref) => { // 2. RECEBEMOS A 'ref' COMO SEGUNDO ARGUMENTO
   // Estados locais apenas para controle de UI deste componente
   const [metodoPagamento, setMetodoPagamento] = useState('Dinheiro');
   const [valorPago, setValorPago] = useState('');
@@ -40,6 +40,7 @@ const PainelVenda = ({
 
   return (
     <Paper sx={{ flex: 5, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 32px)' }}>
+      {/* Título e Tabela de Itens (sem alterações) */}
       <Typography variant="h5" sx={{ p: 2, pb: 1 }}>Itens da Venda</Typography>
       <Divider />
       <TableContainer sx={{ flex: 1, overflowY: 'auto' }}>
@@ -125,8 +126,14 @@ const PainelVenda = ({
       
         {metodoPagamento === 'Dinheiro' && (
           <TextField 
-            label="Valor Pago" type="number" fullWidth value={valorPago} onChange={(e) => setValorPago(e.target.value)}
+            label="Valor Pago (F8)" 
+            type="number" 
+            fullWidth 
+            value={valorPago} 
+            onChange={(e) => setValorPago(e.target.value)}
             InputProps={{ startAdornment: <InputAdornment position="start">R$</InputAdornment> }}
+            // 3. CONECTAMOS A REF AO INPUT INTERNO DO TEXTFIELD
+            inputRef={ref}
           />
         )}
         
@@ -167,6 +174,6 @@ const PainelVenda = ({
       </Box>
     </Paper>
   );
-};
+});
 
 export default PainelVenda;
