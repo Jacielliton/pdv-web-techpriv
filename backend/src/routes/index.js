@@ -8,7 +8,7 @@ const ProdutoController = require('../controllers/ProdutoController');
 const VendaController = require('../controllers/VendaController');
 const DashboardController = require('../controllers/DashboardController');
 const CaixaController = require('../controllers/CaixaController');
-const RelatorioController = require('../controllers/RelatorioController'); // 1. IMPORTE
+const RelatorioController = require('../controllers/RelatorioController');
 const ClienteController = require('../controllers/ClienteController');
 const FornecedorController = require('../controllers/FornecedorController');
 const EstoqueController = require('../controllers/EstoqueController');
@@ -21,10 +21,8 @@ const authManagerMiddleware = require('../middlewares/authManager');
 
 const routes = new Router();
 
-// --- Rota Pública de Health Check ---
+// --- Rotas Públicas ---
 routes.get('/status', (req, res) => res.json({ status: 'OK' }));
-
-// --- Rota Pública de Login ---
 routes.post('/login', SessionController.store);
 
 // ===================================================================
@@ -39,14 +37,19 @@ routes.get('/vendas/:id', VendaController.show);
 routes.put('/vendas/:id/cancelar', VendaController.cancelar);
 routes.get('/vendas', VendaController.index);
 
-// --- ROTAS DE CAIXA MOVIDAS PARA A SEÇÃO CORRETA ---
 routes.get('/caixa/status', CaixaController.getStatus);
 routes.post('/caixa/abrir', CaixaController.abrirCaixa);
 routes.post('/caixa/movimentacao', CaixaController.registrarMovimentacao);
 routes.get('/caixa/resumo', CaixaController.getResumo);
-routes.post('/caixa/fechar', CaixaController.fecharCaixa); // <--- MOVIDO PARA CIMA
+routes.post('/caixa/fechar', CaixaController.fecharCaixa);
 routes.get('/clientes/:clienteId/contas', ContasReceberController.index);
 routes.post('/contas-receber/:contaId/pagar', ContasReceberController.registrarPagamento);
+
+// ===================================================================
+// ROTA DE LISTAGEM DE CLIENTES MOVIDA PARA CIMA
+// Agora, todos os usuários logados podem buscar/listar clientes.
+routes.get('/clientes', ClienteController.index);
+// ===================================================================
 
 
 // ===================================================================
@@ -69,26 +72,22 @@ routes.get('/dashboard/summary', DashboardController.getSummary);
 routes.get('/dashboard/vendas-semanais', DashboardController.getVendasSemanais);
 routes.get('/dashboard/low-stock', DashboardController.getLowStockProducts);
 
-// A rota de histórico de TODOS os caixas continua aqui, pois é uma função gerencial.
 routes.get('/caixas/historico', CaixaController.getHistorico);
 routes.get('/caixas/movimentacoes', CaixaController.getMovimentacoes);
 routes.get('/relatorios/vendas', RelatorioController.getRelatorioVendas);
 routes.get('/relatorios/lucratividade', RelatorioController.getRelatorioLucratividade);
 
-
-// ROTAS DE CLIENTES
-routes.get('/clientes', ClienteController.index);
+// ROTAS DE GERENCIAMENTO DE CLIENTES (permanecem exclusivas para gerentes)
 routes.get('/clientes/:id', ClienteController.show);
 routes.post('/clientes', ClienteController.store);
 routes.put('/clientes/:id', ClienteController.update);
 routes.delete('/clientes/:id', ClienteController.destroy);
 
-// NOVAS ROTAS DE FORNECEDORES E ESTOQUE
+// ROTAS DE FORNECEDORES E ESTOQUE
 routes.get('/fornecedores', FornecedorController.index);
 routes.post('/fornecedores', FornecedorController.store);
 routes.put('/fornecedores/:id', FornecedorController.update);
 routes.delete('/fornecedores/:id', FornecedorController.delete);
-
 routes.post('/estoque/entrada', EstoqueController.registrarEntrada);
 
 

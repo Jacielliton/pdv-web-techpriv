@@ -12,6 +12,8 @@ import {
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline'; // Importe um ícone de "saída"
+
 
 const formatCurrency = (value) => `R$ ${Number(value || 0).toFixed(2)}`;
 
@@ -58,13 +60,15 @@ function FechamentoCaixa() {
   // --- useMemo AGORA USA O VALOR "DEBOUNCED" PARA OS CÁLCULOS ---
   const { totalEsperadoDinheiro, diferenca } = useMemo(() => {
     if (!resumo) return { totalEsperadoDinheiro: 0, diferenca: 0 };
+    
+    // A LÓGICA DE CÁLCULO JÁ ESTÁ CORRETA AQUI, POIS ELA PEGA APENAS VENDAS EM DINHEIRO
     const totalDinheiroVendas = resumo.totaisPorPagamento.Dinheiro || 0;
-    const valorEsperado = resumo.valor_inicial + totalDinheiroVendas + resumo.totalSuprimentos - resumo.totalSangrias;
-    // O cálculo agora usa o valor que sofreu o delay, e não o valor digitado instantaneamente
+    const valorEsperado = resumo.valor_inicial + totalDinheiroVendas + resumo.totalSuprimentos + resumo.totalPagamentosFiado - resumo.totalSangrias;
+    
     const valorContado = parseFloat(debouncedValorInformado) || 0;
     const diff = valorContado - valorEsperado;
     return { totalEsperadoDinheiro: valorEsperado, diferenca: diff };
-  }, [resumo, debouncedValorInformado]); // A dependência mudou para o valor "debounced"
+  }, [resumo, debouncedValorInformado]);
 
 
   const handleFecharCaixa = async () => {
@@ -112,22 +116,42 @@ function FechamentoCaixa() {
           <Paper sx={{ p: 2, height: '100%' }}>
             <Typography variant="h6" gutterBottom>Resumo do Sistema</Typography>
             <List>
+              {/* --- ENTRADAS DE DINHEIRO --- */}
               <ListItem>
                 <ListItemIcon><ArrowUpwardIcon color="success" /></ListItemIcon>
                 <ListItemText primary="Valor de Abertura (Troco)" secondary={formatCurrency(resumo.valor_inicial)} />
               </ListItem>
               <ListItem>
                 <ListItemIcon><AttachMoneyIcon color="success" /></ListItemIcon>
-                <ListItemText primary="Total Pago Presencial" secondary={formatCurrency(resumo.totaisPorPagamento.Dinheiro)} />
+                <ListItemText primary="Vendas em Dinheiro" secondary={formatCurrency(resumo.totaisPorPagamento.Dinheiro)} />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon><AttachMoneyIcon color="success" /></ListItemIcon>
+                <ListItemText primary="Pagamentos de Contas (Fiado)" secondary={formatCurrency(resumo.totalPagamentosFiado)} />
               </ListItem>
               <ListItem>
                 <ListItemIcon><ArrowUpwardIcon color="success" /></ListItemIcon>
                 <ListItemText primary="Total de Suprimentos" secondary={formatCurrency(resumo.totalSuprimentos)} />
               </ListItem>
+
+              <Divider sx={{ my: 1 }} />
+
+              {/* --- SAÍDAS DE DINHEIRO --- */}
               <ListItem>
                 <ListItemIcon><ArrowDownwardIcon color="error" /></ListItemIcon>
                 <ListItemText primary="Total de Sangrias" secondary={formatCurrency(resumo.totalSangrias)} />
               </ListItem>
+              
+              {/* --- INFORMATIVO (NÃO AFETA O DINHEIRO EM CAIXA) --- */}
+              <ListItem>
+                <ListItemIcon><RemoveCircleOutlineIcon color="action" /></ListItemIcon>
+                <ListItemText 
+                    primary="Vendas a Prazo (Fiado)" 
+                    secondary={formatCurrency(resumo.totalVendasAPrazo)}
+                    secondaryTypographyProps={{ style: { color: 'gray', fontStyle: 'italic' } }}
+                />
+              </ListItem>
+
             </List>
             <Divider sx={{ my: 2 }} />
             <Box sx={{ p: 2, backgroundColor: 'action.hover', borderRadius: 1, textAlign: 'center' }}>

@@ -5,6 +5,8 @@ const Caixa = require('../models/Caixa');
 const Funcionario = require('../models/Funcionario');
 const Venda = require('../models/Venda');
 const MovimentacaoCaixa = require('../models/MovimentacaoCaixa');
+const PagamentoConta = require('../models/PagamentoConta'); // 1. IMPORTE O MODEL DE PAGAMENTOS
+
 
 class CaixaController {
   async getStatus(req, res) {
@@ -51,14 +53,28 @@ class CaixaController {
     try {
       const caixaAberto = await Caixa.findOne({ where: { funcionario_id: req.userId, status: 'ABERTO' } });
       if (!caixaAberto) { return res.status(404).json({ error: 'Nenhum caixa aberto encontrado.' }); }
-      const vendas = await Venda.findAll({ where: { caixa_id: caixaAberto.id }, attributes: ['metodo_pagamento', [sequelize.fn('SUM', sequelize.col('valor_total')), 'total']], group: ['metodo_pagamento'], raw: true });
+      
+      const vendasAgrupadas = await Venda.findAll({ where: { caixa_id: caixaAberto.id }, attributes: ['metodo_pagamento', [sequelize.fn('SUM', sequelize.col('valor_total')), 'total']], group: ['metodo_pagamento'], raw: true });
       const movimentacoes = await MovimentacaoCaixa.findAll({ where: { caixa_id: caixaAberto.id }, attributes: ['tipo', [sequelize.fn('SUM', sequelize.col('valor')), 'total']], group: ['tipo'], raw: true });
+      const totalPagamentosFiado = await PagamentoConta.sum('valor', { where: { caixa_id: caixaAberto.id, metodo_pagamento: 'Dinheiro' } }) || 0;
+
       const resumo = {
         caixa_id: caixaAberto.id, data_abertura: caixaAberto.data_abertura,
         valor_inicial: parseFloat(caixaAberto.valor_inicial), totaisPorPagamento: {},
         totalSangrias: 0, totalSuprimentos: 0,
+        totalPagamentosFiado: parseFloat(totalPagamentosFiado),
+        totalVendasAPrazo: 0, // 1. ADICIONA O NOVO CAMPO AO RESUMO
       };
-      vendas.forEach(venda => { resumo.totaisPorPagamento[venda.metodo_pagamento] = parseFloat(venda.total); });
+
+      vendasAgrupadas.forEach(venda => {
+        const valor = parseFloat(venda.total);
+        resumo.totaisPorPagamento[venda.metodo_pagamento] = valor;
+        // 2. SEPARA O VALOR DAS VENDAS "A PRAZO"
+        if (venda.metodo_pagamento === 'A Prazo') {
+            resumo.totalVendasAPrazo = valor;
+        }
+      });
+      
       movimentacoes.forEach(mov => {
         if (mov.tipo === 'SANGRIA') resumo.totalSangrias = parseFloat(mov.total);
         if (mov.tipo === 'SUPRIMENTO') resumo.totalSuprimentos = parseFloat(mov.total);
@@ -69,9 +85,6 @@ class CaixaController {
 
   async fecharCaixa(req, res) {
     const { valor_final_informado } = req.body;
-    if (valor_final_informado === undefined || isNaN(parseFloat(valor_final_informado))) {
-      return res.status(400).json({ error: 'Valor final informado é obrigatório.' });
-    }
     const t = await sequelize.transaction();
     try {
       const caixaAberto = await Caixa.findOne({ where: { funcionario_id: req.userId, status: 'ABERTO' }, transaction: t });
@@ -80,11 +93,19 @@ class CaixaController {
         return res.status(404).json({ error: 'Nenhum caixa aberto para fechar.' });
       }
       const totalVendasDinheiro = await Venda.sum('valor_total', { where: { caixa_id: caixaAberto.id, metodo_pagamento: 'Dinheiro' }, transaction: t }) || 0;
+      // 3. BUSCA O TOTAL DE VENDAS A PRAZO REALIZADAS NESTE CAIXA
+      const totalVendasAPrazo = await Venda.sum('valor_total', { where: { caixa_id: caixaAberto.id, metodo_pagamento: 'A Prazo' }, transaction: t }) || 0;
       const totalSuprimentos = await MovimentacaoCaixa.sum('valor', { where: { caixa_id: caixaAberto.id, tipo: 'SUPRIMENTO' }, transaction: t }) || 0;
       const totalSangrias = await MovimentacaoCaixa.sum('valor', { where: { caixa_id: caixaAberto.id, tipo: 'SANGRIA' }, transaction: t }) || 0;
-      const valorCalculado = (parseFloat(caixaAberto.valor_inicial) + totalVendasDinheiro + totalSuprimentos) - totalSangrias;
+      const totalPagamentosFiado = await PagamentoConta.sum('valor', {
+        where: { caixa_id: caixaAberto.id, metodo_pagamento: 'Dinheiro' },
+        transaction: t
+      }) || 0;
+      const valorCalculado = (parseFloat(caixaAberto.valor_inicial) + totalVendasDinheiro + totalSuprimentos + totalPagamentosFiado) - totalSangrias;
+      
       const valorInformado = parseFloat(valor_final_informado);
       const diferenca = valorInformado - valorCalculado;
+      
       const caixaFechado = await caixaAberto.update({
         data_fechamento: new Date(), valor_final_calculado: valorCalculado,
         valor_final_informado: valorInformado, diferenca: diferenca, status: 'FECHADO',
