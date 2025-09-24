@@ -29,7 +29,17 @@ class VendaController {
       whereClause.metodo_pagamento = metodoPagamento;
     }
 
+    // O middleware de autenticação já adicionou 'userId' e 'userCargo' ao objeto 'req'
+    const { userId, userCargo } = req;
+
+    // Se o usuário logado NÃO for um gerente, adicionamos uma condição extra
+    // para buscar apenas as vendas cujo 'funcionario_id' seja igual ao ID dele.
+    if (userCargo !== 'gerente') {
+      whereClause.funcionario_id = userId;
+    }
+
     try {
+      // A consulta agora usa a 'whereClause' que pode ou não ter o filtro de funcionário
       const { count, rows: vendas } = await Venda.findAndCountAll({
         where: whereClause,
         order: [['data_venda', 'DESC']],

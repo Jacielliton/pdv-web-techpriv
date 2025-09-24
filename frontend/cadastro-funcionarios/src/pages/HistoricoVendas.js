@@ -133,7 +133,7 @@ function HistoricoVendas() {
               onChange={handleFiltroChange}
               displayEmpty
             >
-              <MenuItem value=""><em>Todos</em></MenuItem>
+              <MenuItem value=""><em>Método pagamento</em></MenuItem>
               <MenuItem value="Dinheiro">Dinheiro</MenuItem>
               <MenuItem value="Cartão de Crédito">Cartão de Crédito</MenuItem>
               <MenuItem value="Cartão de Débito">Cartão de Débito</MenuItem>

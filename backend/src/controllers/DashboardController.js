@@ -105,6 +105,23 @@ class DashboardController {
       return res.status(500).json({ error: 'Erro ao buscar dados para o gráfico.', details: error.message });
     }
   }
+  async getLowStockProducts(req, res) {
+    try {
+      const produtos = await Produto.findAll({
+        where: {
+          // A condição é: quantidade_estoque é menor ou igual ao estoque_minimo
+          quantidade_estoque: {
+            [Op.lte]: sequelize.col('estoque_minimo')
+          }
+        },
+        order: [['quantidade_estoque', 'ASC']], // Mostra os mais críticos primeiro
+        attributes: ['id', 'nome', 'quantidade_estoque', 'estoque_minimo']
+      });
+      return res.json(produtos);
+    } catch (error) {
+      return res.status(500).json({ error: 'Erro ao buscar produtos com estoque baixo.', details: error.message });
+    }
+  }
 }
 
 module.exports = new DashboardController();

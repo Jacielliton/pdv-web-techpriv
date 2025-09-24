@@ -1,5 +1,4 @@
-// backend/src/models/associations.js
-
+// backend/src/models/associations.js (VERSÃO FINAL E CORRIGIDA)
 const Funcionario = require('./Funcionario');
 const Caixa = require('./Caixa');
 const Venda = require('./Venda');
@@ -7,38 +6,49 @@ const VendaItem = require('./VendaItem');
 const Produto = require('./Produto');
 const Cliente = require('./Cliente');
 const MovimentacaoCaixa = require('./MovimentacaoCaixa');
+const Fornecedor = require('./Fornecedor');
+const EntradaEstoque = require('./EntradaEstoque');
 
 function applyAssociations() {
-  // Relação: Funcionário -> Caixa (Um funcionário pode ter vários caixas)
+  // Relações de Funcionário
   Funcionario.hasMany(Caixa, { foreignKey: 'funcionario_id' });
-  Caixa.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
-
-  // Relação: Funcionário -> Venda
   Funcionario.hasMany(Venda, { foreignKey: 'funcionario_id' });
-  Venda.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
-
-  // Relação: Caixa -> Venda
-  Caixa.hasMany(Venda, { foreignKey: 'caixa_id' });
-  Venda.belongsTo(Caixa, { foreignKey: 'caixa_id' });
-
-  // Relação: Cliente -> Venda
-  Cliente.hasMany(Venda, { foreignKey: 'cliente_id' });
-  Venda.belongsTo(Cliente, { foreignKey: 'cliente_id' });
+  Funcionario.hasMany(MovimentacaoCaixa, { foreignKey: 'funcionario_id' });
   
-  // Relação: Venda -> VendaItem
-  Venda.hasMany(VendaItem, { foreignKey: 'venda_id' });
-  VendaItem.belongsTo(Venda, { foreignKey: 'venda_id' });
+  // Relações de Caixa
+  Caixa.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
+  Caixa.hasMany(Venda, { foreignKey: 'caixa_id' });
+  Caixa.hasMany(MovimentacaoCaixa, { foreignKey: 'caixa_id' });
 
-  // Relação: Produto -> VendaItem
-  Produto.hasMany(VendaItem, { foreignKey: 'produto_id' });
+  // Relações de Venda
+  Venda.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
+  Venda.belongsTo(Caixa, { foreignKey: 'caixa_id' });
+  Venda.belongsTo(Cliente, { foreignKey: 'cliente_id' });
+  Venda.hasMany(VendaItem, { foreignKey: 'venda_id' });
+
+  // Relação de Cliente
+  Cliente.hasMany(Venda, { foreignKey: 'cliente_id' });
+  
+  // Relação de VendaItem
+  VendaItem.belongsTo(Venda, { foreignKey: 'venda_id' });
   VendaItem.belongsTo(Produto, { foreignKey: 'produto_id' });
 
-  // Relação: Caixa -> MovimentacaoCaixa
-  Caixa.hasMany(MovimentacaoCaixa, { foreignKey: 'caixa_id' });
-  MovimentacaoCaixa.belongsTo(Caixa, { foreignKey: 'caixa_id' });
+  // Relação de Fornecedor
+  Fornecedor.hasMany(EntradaEstoque, { foreignKey: 'fornecedor_id' });
 
-  // Relação: Funcionario -> MovimentacaoCaixa
-  Funcionario.hasMany(MovimentacaoCaixa, { foreignKey: 'funcionario_id' });
+  // ===================================================================
+  // ASSOCIAÇÕES QUE FALTAVAM
+  // ===================================================================
+  Produto.hasMany(VendaItem, { foreignKey: 'produto_id' });
+  Produto.hasMany(EntradaEstoque, { foreignKey: 'produto_id' });
+
+  EntradaEstoque.belongsTo(Produto, { foreignKey: 'produto_id' });
+  EntradaEstoque.belongsTo(Fornecedor, { foreignKey: 'fornecedor_id' });
+  EntradaEstoque.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
+  // ===================================================================
+  
+  // Relação de MovimentacaoCaixa
+  MovimentacaoCaixa.belongsTo(Caixa, { foreignKey: 'caixa_id' });
   MovimentacaoCaixa.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
 }
 

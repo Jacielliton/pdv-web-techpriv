@@ -28,6 +28,8 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import ModalShortcuts from './ModalShortcuts'; 
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
+import BusinessIcon from '@mui/icons-material/Business';
+
 const drawerWidth = 240;
 
 const Layout = () => {
@@ -49,7 +51,8 @@ const Layout = () => {
     { text: 'Relatórios', icon: <AssessmentIcon />, path: '/relatorios', managerOnly: true },
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/', managerOnly: true },
     { text: 'Funcionários', icon: <PeopleIcon />, path: '/funcionarios', managerOnly: true },
-    { text: 'Clientes', icon: <SupervisorAccountIcon />, path: '/clientes', managerOnly: true }, // NOVO ITEM
+    { text: 'Clientes', icon: <SupervisorAccountIcon />, path: '/clientes', managerOnly: true }, 
+    { text: 'Fornecedores', icon: <BusinessIcon />, path: '/fornecedores', managerOnly: true },
     { text: 'Produtos', icon: <InventoryIcon />, path: '/produtos', managerOnly: true },
   ];
 

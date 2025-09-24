@@ -1,5 +1,5 @@
-// backend/src/models/Produto.js (VERSÃO CORRIGIDA E FINAL)
-const { DataTypes, Model } = require('sequelize');
+// backend/src/models/Produto.js (VERSÃO FINAL E CORRIGIDA)
+const { Model, DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 class Produto extends Model {}
@@ -21,6 +21,19 @@ Produto.init({
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
   },
+  // ===================================================================
+  // CAMPOS QUE FALTAVAM
+  // ===================================================================
+  preco_custo: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true, // Pode ser nulo até a primeira entrada
+  },
+  estoque_minimo: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 10, // Define um valor padrão
+  },
+  // ===================================================================
   quantidade_estoque: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -33,10 +46,7 @@ Produto.init({
 }, {
   sequelize,
   modelName: 'Produto',
-  // --- LINHA ADICIONADA ---
-  // Garante que o nome da tabela seja sempre 'produtos' em minúsculo
-  tableName: 'produtos', 
-  // -------------------------
+  tableName: 'produtos',
   timestamps: false,
 });
 

@@ -11,6 +11,7 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
     preco: '',
     quantidade_estoque: '',
     codigo_barras: '',
+    estoque_minimo: '',
   });  
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,11 +24,12 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
         preco: produtoParaEditar.preco,
         quantidade_estoque: produtoParaEditar.quantidade_estoque,
         codigo_barras: produtoParaEditar.codigo_barras || '',
+        estoque_minimo: produtoParaEditar.estoque_minimo || 10, // POPULE O CAMPO NA EDIÇÃO
       });
       setIsEditing(true);
       
     } else {
-      setFormData({ nome: '', descricao: '', preco: '', quantidade_estoque: '', codigo_barras: '' });
+      setFormData({ nome: '', descricao: '', preco: '', quantidade_estoque: '', codigo_barras: '', estoque_minimo: '' });
       setIsEditing(false);
     }
   }, [produtoParaEditar]);
@@ -55,7 +57,7 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
   };
 
   const limparFormulario = () => {
-    setFormData({ nome: '', descricao: '', preco: '', quantidade_estoque: '', codigo_barras: '' });
+    setFormData({ nome: '', descricao: '', preco: '', quantidade_estoque: '', codigo_barras: '', estoque_minimo: '' });
     if (isEditing) limparEdicao();
   };
 
@@ -98,6 +100,21 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
               required
             />
           </Grid>
+
+          {/* CAMPO DE ESTOQUE MÍNIMO */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              name="estoque_minimo"
+              label="Estoque Mínimo (Alerta)"
+              type="number"
+              value={formData.estoque_minimo}
+              onChange={handleChange}
+              fullWidth
+              required
+              helperText="Alerta será gerado quando o estoque atingir este valor."
+            />
+          </Grid>
+
           <Grid xs={12} sm={6}>
             <TextField
               name="codigo_barras"

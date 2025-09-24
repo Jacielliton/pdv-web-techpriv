@@ -10,6 +10,8 @@ const DashboardController = require('../controllers/DashboardController');
 const CaixaController = require('../controllers/CaixaController');
 const RelatorioController = require('../controllers/RelatorioController'); // 1. IMPORTE
 const ClienteController = require('../controllers/ClienteController');
+const FornecedorController = require('../controllers/FornecedorController');
+const EstoqueController = require('../controllers/EstoqueController');
 
 // Middlewares
 const authMiddleware = require('../middlewares/auth');
@@ -61,6 +63,7 @@ routes.delete('/produtos/:id', ProdutoController.delete);
 
 routes.get('/dashboard/summary', DashboardController.getSummary);
 routes.get('/dashboard/vendas-semanais', DashboardController.getVendasSemanais);
+routes.get('/dashboard/low-stock', DashboardController.getLowStockProducts);
 
 // A rota de histórico de TODOS os caixas continua aqui, pois é uma função gerencial.
 routes.get('/caixas/historico', CaixaController.getHistorico);
@@ -73,6 +76,14 @@ routes.get('/clientes/:id', ClienteController.show);
 routes.post('/clientes', ClienteController.store);
 routes.put('/clientes/:id', ClienteController.update);
 routes.delete('/clientes/:id', ClienteController.destroy);
+
+// NOVAS ROTAS DE FORNECEDORES E ESTOQUE
+routes.get('/fornecedores', FornecedorController.index);
+routes.post('/fornecedores', FornecedorController.store);
+routes.put('/fornecedores/:id', FornecedorController.update);
+routes.delete('/fornecedores/:id', FornecedorController.delete);
+
+routes.post('/estoque/entrada', EstoqueController.registrarEntrada);
 
 
 module.exports = routes;

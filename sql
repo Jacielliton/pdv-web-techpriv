@@ -72,6 +72,35 @@ ALTER TABLE vendas ADD COLUMN cliente_id INTEGER REFERENCES clientes(id) ON DELE
 ALTER TABLE vendas ADD COLUMN desconto NUMERIC(10, 2) DEFAULT 0.00;
 ALTER TABLE vendas ADD COLUMN status VARCHAR(255) NOT NULL DEFAULT 'CONCLUIDA';
 
+-- Adiciona a coluna de preço de custo na tabela de produtos
+ALTER TABLE produtos ADD COLUMN preco_custo NUMERIC(10, 2);
+
+-- Cria a tabela de fornecedores
+CREATE TABLE fornecedores (
+    id SERIAL PRIMARY KEY,
+    nome_fantasia VARCHAR(255) NOT NULL,
+    razao_social VARCHAR(255),
+    cnpj VARCHAR(18) UNIQUE,
+    telefone VARCHAR(20),
+    email VARCHAR(255),
+    endereco TEXT
+);
+
+-- Cria a tabela para registrar as entradas de estoque (compras)
+CREATE TABLE entradas_estoque (
+    id SERIAL PRIMARY KEY,
+    quantidade INTEGER NOT NULL,
+    preco_custo_unitario NUMERIC(10, 2) NOT NULL,
+    data_entrada TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    produto_id INTEGER NOT NULL REFERENCES produtos(id) ON DELETE RESTRICT,
+    fornecedor_id INTEGER REFERENCES fornecedores(id) ON DELETE SET NULL,
+    funcionario_id INTEGER NOT NULL REFERENCES funcionarios(id) ON DELETE RESTRICT
+);
+
+-- Adiciona a coluna de estoque mínimo na tabela de produtos
+-- O valor padrão (DEFAULT 10) é um exemplo, você pode ajustar conforme sua necessidade.
+ALTER TABLE produtos ADD COLUMN estoque_minimo INTEGER NOT NULL DEFAULT 10;
+
 -- PASSO 3: Insere o usuário Administrador/Gerente com o hash fornecido.
 INSERT INTO funcionarios (nome, email, senha_hash, cargo) VALUES 
 ('Admin', 'admin@pdv.com', '$2b$08$TTWDh6C40HrrsHrhSdRhX.xfH783Mdukqmyr35sPtuwATABxlJ8fO', 'gerente');

@@ -3,6 +3,7 @@ import api from '../services/api';
 import { toast } from 'react-toastify';
 import { Container, Typography, Grid, Paper, CircularProgress, List, ListItem, ListItemText, Box, Divider, Avatar, ListItemIcon } from '@mui/material';
 import GraficoVendas from '../components/GraficoVendas';
+import LowStockProducts from '../components/LowStockProducts';
 
 // --- Ícones para os cards ---
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
@@ -128,6 +129,9 @@ function Dashboard() {
               </List>
             )}
           </Paper>
+        </Grid>
+        <Grid item xs={12}>
+          <LowStockProducts />
         </Grid>
       </Grid>
     </Container>

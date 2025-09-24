@@ -6,6 +6,8 @@ import ListaProdutos from '../components/ListaProdutos';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from 'react-toastify';
 import { Container, Typography, Box, Pagination, Paper, Divider } from '@mui/material';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart'; // Novo ícone
+import ModalEntradaEstoque from '../components/ModalEntradaEstoque';
 
 
 function Produtos() {
@@ -17,6 +19,14 @@ function Produtos() {
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  const [modalEntradaOpen, setModalEntradaOpen] = useState(false);
+  const [produtoSelecionado, setProdutoSelecionado] = useState(null);
+
+  const handleOpenModalEntrada = (produto) => {
+    setProdutoSelecionado(produto);
+    setModalEntradaOpen(true);
+  };
 
   const fetchProdutos = async (currentPage = 1) => {
     setLoading(true);
@@ -93,6 +103,7 @@ function Produtos() {
           onDeleteRequest={handleDeleteRequest}
           produtos={produtos}
           loading={loading}
+          onRegistrarEntrada={handleOpenModalEntrada}
         />
       </Paper>
       
@@ -111,6 +122,13 @@ function Produtos() {
         onConfirm={handleConfirmDelete}
         title="Confirmar Exclusão"
         message="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita."
+      />
+
+      <ModalEntradaEstoque 
+        open={modalEntradaOpen}
+        onClose={() => setModalEntradaOpen(false)}
+        produto={produtoSelecionado}
+        onSucesso={handleSuccess} // Reutiliza sua função de sucesso para recarregar a lista
       />
     </Container>
   );

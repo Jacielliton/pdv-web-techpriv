@@ -1,19 +1,19 @@
-// src/components/ListaProdutos.js (VERSÃO FINAL CORRIGIDA)
+// src/components/ListaProdutos.js (VERSÃO COM BOTÃO DE ENTRADA DE ESTOQUE)
 import React from 'react';
 import { Box, IconButton, Tooltip } from '@mui/material';
-// CORREÇÃO: Removemos a importação de ptBR
 import { DataGrid } from '@mui/x-data-grid'; 
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+// 1. IMPORTE O NOVO ÍCONE
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 
-// NOVO: Objeto de tradução customizado
 const customLocaleText = {
   noRowsLabel: 'Nenhum resultado encontrado',
   footerRowSelected: (count) => `${count.toLocaleString()} linha(s) selecionada(s)`,
-  // Adicione outras traduções aqui se necessário
 };
 
-const ListaProdutos = ({ onEdit, onDeleteRequest, produtos, loading }) => {
+// 2. ADICIONE 'onRegistrarEntrada' ÀS PROPRIEDADES DO COMPONENTE
+const ListaProdutos = ({ onEdit, onDeleteRequest, onRegistrarEntrada, produtos, loading }) => {
   const columns = [
     { field: 'id', headerName: 'ID', width: 90 },
     { field: 'nome', headerName: 'Nome', flex: 1, minWidth: 200 },
@@ -30,13 +30,20 @@ const ListaProdutos = ({ onEdit, onDeleteRequest, produtos, loading }) => {
     {
       field: 'actions',
       headerName: 'Ações',
-      width: 120,
+      width: 150, // Aumentei a largura para caber o novo botão
       align: 'center',
       headerAlign: 'center',
       sortable: false,
       renderCell: (params) => (
         <Box>
-          <Tooltip title="Editar"><IconButton onClick={() => onEdit(params.row)} color="primary"><EditIcon /></IconButton></Tooltip>
+          {/* 3. ADICIONE O NOVO BOTÃO E TOOLTIP AQUI */}
+          <Tooltip title="Registrar Entrada">
+            <IconButton onClick={() => onRegistrarEntrada(params.row)} color="primary">
+              <AddShoppingCartIcon />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Editar"><IconButton onClick={() => onEdit(params.row)}><EditIcon /></IconButton></Tooltip>
           <Tooltip title="Excluir"><IconButton onClick={() => onDeleteRequest(params.row.id)} color="error"><DeleteIcon /></IconButton></Tooltip>
         </Box>
       ),
@@ -48,10 +55,9 @@ const ListaProdutos = ({ onEdit, onDeleteRequest, produtos, loading }) => {
       <DataGrid
         rows={produtos}
         columns={columns}
-        pageSize={10} // Aumentado para 10 para melhor visualização
+        pageSize={10}
         rowsPerPageOptions={[10]}
         loading={loading}
-        // CORREÇÃO: Usamos nosso objeto de tradução customizado
         localeText={customLocaleText} 
         sx={{
           border: 'none',
