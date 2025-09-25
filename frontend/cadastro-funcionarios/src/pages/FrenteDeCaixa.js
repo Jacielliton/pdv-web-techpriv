@@ -1,15 +1,17 @@
 // pdv-web-techpriv\frontend\cadastro-funcionarios\src\pages\FrenteDeCaixa.js (VERSÃO FINAL CORRIGIDA)
-
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useHotkeys } from '../hooks/useHotkeys';
 import api from '../services/api';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'react-toastify';
-import axios from 'axios'; // Importe o axios para a função de autorização do gerente
-import { Box, CircularProgress, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+import axios from 'axios';
+import { Box, CircularProgress, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, ToggleButtonGroup, ToggleButton, Tooltip } from '@mui/material';
+import GridViewIcon from '@mui/icons-material/GridView';
+import ViewListIcon from '@mui/icons-material/ViewList';
 
 // Nossos componentes filhos
 import GridProdutosVenda from '../components/GridProdutosVenda';
+import ListaProdutosLinha from '../components/ListaProdutosLinha';
 import PainelVenda from '../components/PainelVenda';
 import Recibo from '../components/Recibo';
 import ModalAberturaCaixa from '../components/ModalAberturaCaixa';
@@ -25,9 +27,11 @@ function FrenteDeCaixa() {
   const [todosProdutos, setTodosProdutos] = useState([]);
   const [carrinho, setCarrinho] = useState([]);
   const [clienteSelecionado, setClienteSelecionado] = useState(null);
-  const [desconto, setDesconto] = useState(0);
+  const [desconto, setDesconto] = useState(0);  
+  
   
   // Estados de UI e Modais
+  const [viewMode, setViewMode] = useState('grid');
   const [termoBusca, setTermoBusca] = useState('');
   const [lastAddedId, setLastAddedId] = useState(null);
   const [vendaFinalizada, setVendaFinalizada] = useState(null);
@@ -43,6 +47,19 @@ function FrenteDeCaixa() {
   const reciboRef = useRef(null);
   const buscaInputRef = useRef(null); // Para o atalho F4
   const valorPagoInputRef = useRef(null); // Para o atalho F8
+
+  // A LÓGICA DE FILTRAGEM AGORA VIVE AQUI, NO COMPONENTE PAI
+  const produtosFiltrados = useMemo(() => {
+    let filtrados = todosProdutos;
+    if (termoBusca.trim() !== '') {
+      filtrados = todosProdutos.filter(p =>
+        p.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+        (p.codigo_barras && p.codigo_barras.includes(termoBusca.toLowerCase()))
+      );
+    }
+    // Limita a exibição para manter a performance, dependendo da visualização
+    return filtrados.slice(0, viewMode === 'grid' ? 20 : 50);
+  }, [termoBusca, todosProdutos, viewMode]);
 
   // Cálculos Memoizados
   const subtotal = useMemo(() => carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0), [carrinho]);
@@ -69,6 +86,25 @@ function FrenteDeCaixa() {
     });
     setTermoBusca('');
   }, [carrinho]);
+
+  const handleKeyDown = (event) => {
+    // Verifica se a tecla pressionada foi 'Enter' e se há algo digitado
+    if (event.key === 'Enter' && termoBusca.trim() !== '') {
+      event.preventDefault(); // Impede o comportamento padrão do Enter
+      
+      // Procura na lista completa de produtos por um código de barras exato
+      const produtoEncontrado = todosProdutos.find(p => p.codigo_barras === termoBusca.trim());
+
+      if (produtoEncontrado) {
+        // Se encontrou, adiciona ao carrinho e limpa a busca
+        adicionarAoCarrinho(produtoEncontrado);
+        setTermoBusca(''); // Limpa o campo de busca
+      } else {
+        // Se não encontrou, avisa o operador
+        toast.warn('Produto não encontrado pelo código de barras.');
+      }
+    }
+  };
 
   const removerDoCarrinho = useCallback((produtoId) => {
     if (isManager) {
@@ -187,29 +223,49 @@ function FrenteDeCaixa() {
     };
     fetchProdutos();
   }, []); 
+
+  const handleViewChange = (event, newView) => {
+    if (newView !== null) setViewMode(newView);
+  };
  
   // Renderização condicional de Loading e Caixa Fechado
   if (loadingCaixa) { return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>; }
   if (caixaStatus === 'FECHADO') { return <ModalAberturaCaixa open={true} />; }
 
   return (
-    // ATUALIZE A BOX PRINCIPAL COM ESTA LÓGICA DE 'flexDirection'
-    <Box sx={{ 
-      display: 'flex', 
-      height: '100%', 
-      p: 2, 
-      gap: 2,
-      // Em telas pequenas (xs, sm), a direção é coluna. Em telas médias (md) ou maiores, vira linha.
-      flexDirection: { xs: 'column', md: 'row' } 
-    }}>
-      <GridProdutosVenda
-        produtos={todosProdutos}
-        termoBusca={termoBusca}
-        onTermoBuscaChange={setTermoBusca}
-        onAdicionarAoCarrinho={adicionarAoCarrinho}
-        // CORREÇÃO: A ref agora é passada corretamente usando React.forwardRef
-        ref={buscaInputRef} 
-      />
+    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, height: '100%', p: 2, gap: 2 }}>
+      {/* Componente principal da esquerda (produtos) */}
+      <Box sx={{ flex: 7, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <TextField
+            fullWidth
+            label="Buscar Produto (F4) ou Ler Código de Barras"
+            variant="outlined"
+            value={termoBusca}
+            onChange={e => setTermoBusca(e.target.value)}
+            onKeyDown={handleKeyDown}
+            inputRef={buscaInputRef}
+            autoFocus
+          />
+          <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewChange}>
+            <Tooltip title="Visualizar em Grade"><ToggleButton value="grid"><GridViewIcon /></ToggleButton></Tooltip>
+            <Tooltip title="Visualizar em Lista"><ToggleButton value="list"><ViewListIcon /></ToggleButton></Tooltip>
+          </ToggleButtonGroup>
+        </Box>
+        
+        {/* Renderização condicional passando a lista JÁ FILTRADA */}
+        {viewMode === 'grid' ? (
+          <GridProdutosVenda
+            produtosFiltrados={produtosFiltrados}
+            onAdicionarAoCarrinho={adicionarAoCarrinho}
+          />
+        ) : (
+          <ListaProdutosLinha
+            produtosFiltrados={produtosFiltrados}
+            onAdicionarAoCarrinho={adicionarAoCarrinho}
+          />
+        )}
+      </Box>
       
       <PainelVenda
         carrinho={carrinho}
