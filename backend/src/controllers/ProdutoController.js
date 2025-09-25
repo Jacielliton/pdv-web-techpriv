@@ -1,5 +1,6 @@
 // pdv-web-techpriv\backend\src\controllers\ProdutoController.js
 const Yup = require('yup');
+const { Op } = require('sequelize');
 const Produto = require('../models/Produto');
 const EntradaEstoque = require('../models/EntradaEstoque');
 const Fornecedor = require('../models/Fornecedor');
@@ -7,31 +8,32 @@ const Fornecedor = require('../models/Fornecedor');
 class ProdutoController {
   // --- MÉTODO INDEX ATUALIZADO ---
   async index(req, res) {
-    const { page } = req.query; // Pega a página, se existir
+    // 2. RECEBA OS NOVOS PARÂMETROS DE FILTRO E PAGINAÇÃO
+    const { page = 1, limit = 10, nome } = req.query;
+    const offset = limit * (parseInt(page, 10) - 1);
 
-    // SE a página foi solicitada, retorna os dados paginados
-    if (page) {
-      const limit = 10;
-      const offset = limit * (parseInt(page, 10) - 1);
-      try {
-        const { count, rows: produtos } = await Produto.findAndCountAll({
-          order: [['nome', 'ASC']],
-          limit,
-          offset,
-        });
-        const totalPages = Math.ceil(count / limit);
-        return res.json({ produtos, totalPages, currentPage: parseInt(page, 10) });
-      } catch (error) {
-        return res.status(500).json({ error: 'Erro ao listar produtos paginados.' });
-      }
+    // 3. CRIE A CLÁUSULA 'WHERE' DINAMICAMENTE
+    const whereClause = {};
+    if (nome) {
+      // 'iLike' faz uma busca case-insensitive (não diferencia maiúsculas/minúsculas)
+      whereClause.nome = { [Op.iLike]: `%${nome}%` };
     }
 
-    // SE NENHUMA página foi solicitada, retorna TODOS os produtos
     try {
-      const produtos = await Produto.findAll({ order: [['nome', 'ASC']] });
-      return res.json(produtos); // Retorna o array diretamente
+      // 4. APLIQUE A CLÁUSULA 'WHERE' E A PAGINAÇÃO
+      const { count, rows: produtos } = await Produto.findAndCountAll({
+        where: whereClause, // Aplica o filtro de nome, se houver
+        order: [['nome', 'ASC']],
+        limit,
+        offset,
+        distinct: true
+      });
+
+      const totalPages = Math.ceil(count / limit);
+      return res.json({ produtos, totalPages, currentPage: parseInt(page, 10) });
+
     } catch (error) {
-      return res.status(500).json({ error: 'Erro ao listar todos os produtos.' });
+      return res.status(500).json({ error: 'Erro ao listar produtos.' });
     }
   }
 

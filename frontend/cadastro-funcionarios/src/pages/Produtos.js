@@ -1,15 +1,17 @@
-// src/pages/Produtos.js (VERSÃO COM NOVO DESIGN)
-import React, { useState, useEffect } from 'react';
+// src/pages/Produtos.js (VERSÃO CORRIGIDA)
+import React, { useState, useEffect, useCallback } from 'react'; 
 import api from '../services/api';
 import ProdutoForm from '../components/ProdutoForm';
 import ListaProdutos from '../components/ListaProdutos';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from 'react-toastify';
-import { Container, Typography, Box, Pagination, Paper, Divider } from '@mui/material';
-import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart'; // Novo ícone
+// 1. ADICIONE OS COMPONENTES QUE FALTAVAM AQUI
+import { 
+  Container, Typography, Box, Pagination, Paper, Divider, 
+  Grid, TextField, Button 
+} from '@mui/material';
 import ModalEntradaEstoque from '../components/ModalEntradaEstoque';
 import ModalDetalhesProduto from '../components/ModalDetalhesProduto';
-
 
 function Produtos() {
   const [produtos, setProdutos] = useState([]);
@@ -17,16 +19,76 @@ function Produtos() {
   const [produtoParaEditar, setProdutoParaEditar] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [produtoParaDeletar, setProdutoParaDeletar] = useState(null);
-
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
   const [modalEntradaOpen, setModalEntradaOpen] = useState(false);
   const [produtoSelecionado, setProdutoSelecionado] = useState(null);
-
   const [modalDetalhesOpen, setModalDetalhesOpen] = useState(false);
   const [produtoDetalhes, setProdutoDetalhes] = useState(null);
+  const [filtros, setFiltros] = useState({ nome: '' });
+  const [filtrosAtivos, setFiltrosAtivos] = useState({});
 
+  const fetchProdutos = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/produtos', { params: { page, ...filtrosAtivos } });
+      setProdutos(response.data.produtos);
+      setTotalPages(response.data.totalPages);
+    } catch (err) {
+      toast.error('Falha ao carregar produtos.');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, filtrosAtivos]);
+
+  useEffect(() => {
+    fetchProdutos();
+  }, [fetchProdutos]);
+
+  const handleSuccess = () => {
+    // Se estiver editando, permanece na mesma página. Se estiver cadastrando, vai para a primeira.
+    const pageToFetch = produtoParaEditar ? page : 1;
+    if (pageToFetch !== page) { 
+      setPage(pageToFetch); 
+    } else { 
+      fetchProdutos(); 
+    }
+    setProdutoParaEditar(null);
+  };
+
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
+
+  const handleEdit = (produto) => {
+    setProdutoParaEditar(produto);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setProdutoParaEditar(null);
+  };
+
+  const handleDeleteRequest = (id) => {
+    setProdutoParaDeletar(id);
+    setDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await api.delete(`/produtos/${produtoParaDeletar}`);
+      toast.success('Produto excluído com sucesso!');
+      // 2. PEQUENA OTIMIZAÇÃO: Apenas chamamos fetchProdutos, sem passar a página.
+      // A função já usa o 'page' do estado atual.
+      fetchProdutos(); 
+    } catch (err) {
+      toast.error('Erro ao excluir produto.');
+    } finally {
+      setDialogOpen(false);
+      setProdutoParaDeletar(null);
+    }
+  };
+  
   const handleOpenModalEntrada = (produto) => {
     setProdutoSelecionado(produto);
     setModalEntradaOpen(true);
@@ -45,62 +107,13 @@ function Produtos() {
     }
   };
 
-
-  const fetchProdutos = async (currentPage = 1) => {
-    setLoading(true);
-    try {
-      const response = await api.get('/produtos', {
-        params: { page: currentPage }
-      });
-      setProdutos(response.data.produtos);
-      setTotalPages(response.data.totalPages);
-      setPage(currentPage);
-    } catch (err) {
-      toast.error('Falha ao carregar produtos.');
-    } finally {
-      setLoading(false);
-    }
+  const handleFiltroChange = (e) => {
+    setFiltros({ ...filtros, [e.target.name]: e.target.value });
   };
-
-  useEffect(() => {
-    fetchProdutos(page);
-  }, [page]);
-
-  const handleSuccess = () => {
-    const pageToFetch = produtoParaEditar ? page : 1;
-    fetchProdutos(pageToFetch);
-    setProdutoParaEditar(null);
-  };
-
-  const handlePageChange = (event, value) => {
-    setPage(value);
-  };
-
-  const handleEdit = (produto) => {
-    setProdutoParaEditar(produto);
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Rola para o topo para ver o form
-  };
-
-  const handleCancelEdit = () => {
-    setProdutoParaEditar(null);
-  };
-
-  const handleDeleteRequest = (id) => {
-    setProdutoParaDeletar(id);
-    setDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    try {
-      await api.delete(`/produtos/${produtoParaDeletar}`);
-      toast.success('Produto excluído com sucesso!');
-      fetchProdutos(page);
-    } catch (err) {
-      toast.error('Erro ao excluir produto.');
-    } finally {
-      setDialogOpen(false);
-      setProdutoParaDeletar(null);
-    }
+  
+  const handleAplicarFiltros = () => {
+    setPage(1);
+    setFiltrosAtivos(filtros);
   };
 
   return (
@@ -109,13 +122,33 @@ function Produtos() {
         Gerenciamento de Produtos
       </Typography>
 
+      <ProdutoForm
+        onSucesso={handleSuccess}
+        produtoParaEditar={produtoParaEditar}
+        limparEdicao={handleCancelEdit}
+      />
+
+      {/* Com os imports corrigidos, esta seção agora funcionará */}
+      <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={9}>
+            <TextField 
+                name="nome" 
+                label="Buscar produto por nome..." 
+                value={filtros.nome}
+                onChange={handleFiltroChange}
+                onKeyPress={(e) => e.key === 'Enter' && handleAplicarFiltros()}
+                fullWidth 
+                size="small" 
+            />
+          </Grid>
+          <Grid item xs={12} sm={3}>
+            <Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Buscar</Button>
+          </Grid>
+        </Grid>
+      </Paper>
+
       <Paper elevation={3} sx={{ mb: 4 }}>
-        <ProdutoForm
-          onSucesso={handleSuccess}
-          produtoParaEditar={produtoParaEditar}
-          limparEdicao={handleCancelEdit}
-        />
-        <Divider />
         <ListaProdutos
           onEdit={handleEdit}
           onDeleteRequest={handleDeleteRequest}
@@ -140,14 +173,15 @@ function Produtos() {
         onClose={() => setDialogOpen(false)}
         onConfirm={handleConfirmDelete}
         title="Confirmar Exclusão"
-        message="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita."
+        // Corrigi a prop de 'message' para 'description' para ser consistente com seus outros usos
+        description="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita."
       />
 
       <ModalEntradaEstoque 
         open={modalEntradaOpen}
         onClose={() => setModalEntradaOpen(false)}
         produto={produtoSelecionado}
-        onSucesso={handleSuccess} // Reutiliza sua função de sucesso para recarregar a lista
+        onSucesso={handleSuccess}
       />
       
       <ModalDetalhesProduto
