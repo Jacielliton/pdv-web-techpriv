@@ -1,3 +1,4 @@
+// frontend/src/components/ProdutoCard.js (VERSÃO FINAL ALINHADA)
 import React from 'react';
 import { Card, CardActionArea, CardContent, Typography, Box } from '@mui/material';
 
@@ -5,31 +6,36 @@ const ProdutoCard = ({ produto, onProdutoClick }) => {
   const semEstoque = produto.quantidade_estoque <= 0;
 
   return (
-    // Adicionamos um efeito de borda no hover e desabilitamos o card se não houver estoque
     <Card 
       sx={{ 
-        height: '100%', 
-        border: '1px solid',
-        borderColor: 'divider',
-        opacity: semEstoque ? 0.5 : 1, // Fica esmaecido se sem estoque
-        transition: 'box-shadow 0.3s',
-        '&:hover': {
-          boxShadow: (theme) => theme.shadows[4],
-        },
+        width: '100%', // Ocupa toda a largura da célula do grid
+        height: '100%', // Ocupa toda a altura (forçado pelo GridProdutosVenda)
+        display: 'flex', // Habilita o flexbox para o conteúdo interno
+        flexDirection: 'column',
+        opacity: semEstoque ? 0.5 : 1,
       }}
-      elevation={1}
+      elevation={2}
     >
       <CardActionArea 
         onClick={() => !semEstoque && onProdutoClick(produto)} 
         disabled={semEstoque}
-        sx={{ height: '100%', display: 'flex', flexDirection: 'column', p: 1 }}
+        sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }} // Faz a área clicável crescer
       >
-        {/* Conteúdo do Card com melhor alinhamento */}
-        <CardContent sx={{ flex: 1, textAlign: 'center' }}>
+        <CardContent sx={{ flexGrow: 1, p: 1.5 }}> {/* Faz o conteúdo principal crescer, empurrando o preço para baixo */}
           <Typography 
             variant="body1" 
             component="div" 
-            sx={{ fontWeight: 'bold', mb: 1 }}
+            sx={{ 
+              fontWeight: 'bold', 
+              lineHeight: 1.25, 
+              // Garante espaço para até 2 linhas, evitando que o card mude de altura
+              height: '2.5em', 
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              '-webkit-line-clamp': '2',
+              '-webkit-box-orient': 'vertical',
+            }}
           >
             {produto.nome}
           </Typography>
@@ -38,8 +44,7 @@ const ProdutoCard = ({ produto, onProdutoClick }) => {
           </Typography>
         </CardContent>
 
-        {/* Preço com mais destaque */}
-        <Box sx={{ width: '100%', mt: 'auto' }}>
+        <Box sx={{ p: 1, width: '100%' }}>
           <Typography 
             variant="h6" 
             color="primary.main" 
@@ -53,4 +58,4 @@ const ProdutoCard = ({ produto, onProdutoClick }) => {
   );
 };
 
-export default ProdutoCard;
+export default React.memo(ProdutoCard); // Usamos React.memo para otimização

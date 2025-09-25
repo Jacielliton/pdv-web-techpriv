@@ -176,21 +176,32 @@ function FrenteDeCaixa() {
   useEffect(() => {
     const fetchProdutos = async () => {
       try {
-        const response = await api.get('/produtos');
+        // CORREÇÃO: Adicionamos um limite alto para buscar todos os produtos
+        const response = await api.get('/produtos', {
+          params: { limit: 9000 } // Pede até 9000 produtos
+        });
         setTodosProdutos(response.data.produtos || response.data || []);
       } catch (error) {
         toast.error('Erro ao carregar produtos.');
       }
     };
     fetchProdutos();
-  }, []);
+  }, []); 
  
   // Renderização condicional de Loading e Caixa Fechado
   if (loadingCaixa) { return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>; }
   if (caixaStatus === 'FECHADO') { return <ModalAberturaCaixa open={true} />; }
 
   return (
-    <Box sx={{ display: 'flex', height: '100%', p: 2, gap: 2 }}>
+    // ATUALIZE A BOX PRINCIPAL COM ESTA LÓGICA DE 'flexDirection'
+    <Box sx={{ 
+      display: 'flex', 
+      height: '100%', 
+      p: 2, 
+      gap: 2,
+      // Em telas pequenas (xs, sm), a direção é coluna. Em telas médias (md) ou maiores, vira linha.
+      flexDirection: { xs: 'column', md: 'row' } 
+    }}>
       <GridProdutosVenda
         produtos={todosProdutos}
         termoBusca={termoBusca}

@@ -1,11 +1,10 @@
 // frontend/src/components/GridProdutosVenda.js (VERSÃO FINAL E CORRIGIDA)
 
 import React, { useMemo } from 'react';
-import { Grid, TextField, Paper, Box } from '@mui/material';
+import { Grid, TextField, Paper, Box, Typography } from '@mui/material'; // Adicione Typography
 import ProdutoCard from './ProdutoCard';
 import { toast } from 'react-toastify';
 
-// A sintaxe correta envolve declarar o componente com forwardRef primeiro
 const GridProdutosVenda = React.forwardRef(({ 
   produtos, 
   termoBusca, 
@@ -14,11 +13,15 @@ const GridProdutosVenda = React.forwardRef(({
 }, ref) => {
 
   const produtosFiltrados = useMemo(() => {
-    if (!termoBusca) return produtos;
-    return produtos.filter(p =>
-      p.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-      (p.codigo_barras && p.codigo_barras.includes(termoBusca))
-    );
+    let filtrados = produtos;
+    if (termoBusca.trim() !== '') {
+      filtrados = produtos.filter(p =>
+        p.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
+        (p.codigo_barras && p.codigo_barras.includes(termoBusca))
+      );
+    }
+    // 1. LIMITA A EXIBIÇÃO A APENAS 20 ITENS
+    return filtrados.slice(0, 20);
   }, [termoBusca, produtos]);
 
   const handleKeyDown = (event) => {
@@ -49,17 +52,25 @@ const GridProdutosVenda = React.forwardRef(({
         autoFocus
       />
       <Paper sx={{ flex: 1, p: 2, overflowY: 'auto' }}>
+        {/* 2. AJUSTE NO GRID PARA GARANTIR ALINHAMENTO */}
         <Grid container spacing={2}>
-          {produtosFiltrados.map(produto => (
-            <Grid item key={produto.id} xs={6} sm={4} md={3} xl={2}>
-              <ProdutoCard produto={produto} onProdutoClick={onAdicionarAoCarrinho} />
+          {produtosFiltrados.length > 0 ? (
+            produtosFiltrados.map(produto => (
+              <Grid item key={produto.id} xs={6} sm={4} md={3} xl={2} sx={{ display: 'flex' }}>
+                <ProdutoCard produto={produto} onProdutoClick={onAdicionarAoCarrinho} />
+              </Grid>
+            ))
+          ) : (
+            <Grid item xs={12}>
+              <Typography sx={{ textAlign: 'center', p: 4, color: 'text.secondary' }}>
+                Nenhum produto encontrado.
+              </Typography>
             </Grid>
-          ))}
+          )}
         </Grid>
       </Paper>
     </Box>
   );
 });
 
-// E então exportar a constante
 export default GridProdutosVenda;
