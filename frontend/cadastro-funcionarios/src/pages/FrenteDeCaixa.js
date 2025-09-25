@@ -5,9 +5,11 @@ import api from '../services/api';
 import { useAuth } from '../contexts/auth';
 import { toast } from 'react-toastify';
 import axios from 'axios';
-import { Box, CircularProgress, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, ToggleButtonGroup, ToggleButton, Tooltip } from '@mui/material';
+import { Box, CircularProgress, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, 
+  ToggleButtonGroup, ToggleButton, Tooltip, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ViewListIcon from '@mui/icons-material/ViewList';
+import PageviewIcon from '@mui/icons-material/Pageview';
 
 // Nossos componentes filhos
 import GridProdutosVenda from '../components/GridProdutosVenda';
@@ -22,14 +24,14 @@ import ModalDesconto from '../components/ModalDesconto';
 
 function FrenteDeCaixa() {
   const { isManager, caixaStatus, loadingCaixa } = useAuth();
-
+  //ESTADO PARA CONTROLAR A QUANTIDADE DE ITENS
+  const [itensPorPagina, setItensPorPagina] = useState(10);
   // Estados principais
   const [todosProdutos, setTodosProdutos] = useState([]);
   const [carrinho, setCarrinho] = useState([]);
   const [clienteSelecionado, setClienteSelecionado] = useState(null);
   const [desconto, setDesconto] = useState(0);  
-  
-  
+   
   // Estados de UI e Modais
   const [viewMode, setViewMode] = useState('grid');
   const [termoBusca, setTermoBusca] = useState('');
@@ -57,9 +59,9 @@ function FrenteDeCaixa() {
         (p.codigo_barras && p.codigo_barras.includes(termoBusca.toLowerCase()))
       );
     }
-    // Limita a exibição para manter a performance, dependendo da visualização
-    return filtrados.slice(0, viewMode === 'grid' ? 20 : 50);
-  }, [termoBusca, todosProdutos, viewMode]);
+    // Agora, em vez de um número fixo, usamos o estado 'itensPorPagina'
+    return filtrados.slice(0, itensPorPagina);
+  }, [termoBusca, todosProdutos, itensPorPagina]);
 
   // Cálculos Memoizados
   const subtotal = useMemo(() => carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0), [carrinho]);
@@ -247,13 +249,27 @@ function FrenteDeCaixa() {
             inputRef={buscaInputRef}
             autoFocus
           />
+          <FormControl sx={{ minWidth: 120 }} size="small">
+            <InputLabel>Exibir</InputLabel>
+            <Select
+              value={itensPorPagina}
+              label="Exibir"
+              onChange={(e) => setItensPorPagina(e.target.value)}
+              startAdornment={<PageviewIcon sx={{ mr: 1, color: 'action.active' }} />}
+            >
+              <MenuItem value={5}>5</MenuItem>
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={15}>15</MenuItem>
+              <MenuItem value={20}>20</MenuItem>
+            </Select>
+          </FormControl>
           <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewChange}>
             <Tooltip title="Visualizar em Grade"><ToggleButton value="grid"><GridViewIcon /></ToggleButton></Tooltip>
             <Tooltip title="Visualizar em Lista"><ToggleButton value="list"><ViewListIcon /></ToggleButton></Tooltip>
           </ToggleButtonGroup>
         </Box>
         
-        {/* Renderização condicional passando a lista JÁ FILTRADA */}
+        {/* Renderização condicional (sem alterações) */}
         {viewMode === 'grid' ? (
           <GridProdutosVenda
             produtosFiltrados={produtosFiltrados}
@@ -266,8 +282,8 @@ function FrenteDeCaixa() {
           />
         )}
       </Box>
-      
-      <PainelVenda
+
+      <PainelVenda        
         carrinho={carrinho}
         subtotal={subtotal}
         desconto={desconto}
