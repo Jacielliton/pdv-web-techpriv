@@ -31,6 +31,15 @@ Venda.init({
     },
     allowNull: false,
   },
+
+  vendedor_id: {
+    type: DataTypes.INTEGER,
+    references: {
+      model: 'funcionarios',
+      key: 'id',
+    },
+    allowNull: true, // Permitir nulo caso a venda não tenha vendedor
+  },
   // --- CAMPO CORRIGIDO ---
   caixa_id: {
     type: DataTypes.INTEGER,

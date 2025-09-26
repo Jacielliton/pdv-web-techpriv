@@ -131,8 +131,8 @@ class VendaController {
   // Cadastrar uma nova venda
   async store(req, res) {
   const t = await sequelize.transaction();
-  try {
-    const { valor_total, metodo_pagamento, itens, cliente_id, desconto = 0 } = req.body;
+  try {    
+    const { valor_total, metodo_pagamento, itens, cliente_id, desconto = 0, vendedor_id } = req.body;    
     const funcionario_id = req.userId;
 
     if (metodo_pagamento === 'A Prazo' && !cliente_id) {
@@ -159,6 +159,7 @@ class VendaController {
         caixa_id: caixaAberto.id,
         cliente_id, // Se houver cliente associado
         desconto,   // Salva o valor do desconto para o histórico
+        vendedor_id,
       }, { transaction: t });
 
       // Se a venda for "A Prazo", cria a conta a receber

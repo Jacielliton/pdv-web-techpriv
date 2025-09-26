@@ -92,6 +92,7 @@ const FuncionarioForm = ({ onCadastroSucesso, funcionarioParaEditar, limparEdica
                 <MenuItem value="gerente">Gerente</MenuItem>
                 <MenuItem value="supervisor">Supervisor</MenuItem>
                 <MenuItem value="caixa">Caixa</MenuItem>
+                <MenuItem value="vendedor">Vendedor</MenuItem>
                 {/* Adicione outros cargos aqui se desejar */}
               </Select>
             </FormControl>

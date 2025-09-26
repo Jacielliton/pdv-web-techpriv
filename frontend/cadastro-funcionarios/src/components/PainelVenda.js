@@ -10,9 +10,8 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 
 // 1. ENVOLVEMOS O COMPONENTE COM React.forwardRef
 const PainelVenda = React.forwardRef(({
-  carrinho, subtotal, desconto, totalVenda, clienteSelecionado, lastAddedId,
-  onQuantidadeChange, onRemoverDoCarrinho, onFinalizarVenda, onAbrirModalMovimentacao,
-  onAbrirModalCliente, onRemoverCliente, onAbrirModalDesconto, onRemoverDesconto
+  carrinho, subtotal, desconto, totalVenda, clienteSelecionado, lastAddedId, onQuantidadeChange, onRemoverDoCarrinho, onFinalizarVenda, onAbrirModalMovimentacao,
+  onAbrirModalCliente, onRemoverCliente, onAbrirModalDesconto, onRemoverDesconto, vendedorSelecionado, onAbrirModalVendedor, onRemoverVendedor
 }, ref) => { // 2. RECEBEMOS A 'ref' COMO SEGUNDO ARGUMENTO
   // Estados locais apenas para controle de UI deste componente
   const [metodoPagamento, setMetodoPagamento] = useState('Dinheiro');
@@ -156,17 +155,28 @@ const PainelVenda = React.forwardRef(({
         <Stack direction="row" spacing={2}>
           <Button variant="outlined" color="secondary" fullWidth onClick={onAbrirModalDesconto}>Aplicar Desconto</Button>
           <Button variant="outlined" color="secondary" fullWidth onClick={onRemoverDesconto} disabled={desconto === 0}>Remover Desconto</Button>
-        </Stack>
+        </Stack>        
         
-        {clienteSelecionado ? (
-          <Box sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, textAlign: 'center' }}>
-            <Typography variant="body2">Cliente: {clienteSelecionado.nome}</Typography>
-            <Button size="small" onClick={onRemoverCliente}>Remover Cliente</Button>
-          </Box>
-        ) : (
-          <Button variant="outlined" fullWidth onClick={onAbrirModalCliente}>Associar Cliente</Button>
-        )}
+        {/* 3. Adicione os botões de associar vendedor e cliente lado a lado */}
+        <Stack direction="row" spacing={2}>
+          {vendedorSelecionado ? (
+            <Box sx={{ flex: 1, p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, textAlign: 'center' }}>
+              <Typography variant="body2">Vendedor: {vendedorSelecionado.nome}</Typography>
+              <Button size="small" onClick={onRemoverVendedor}>Remover Vendedor</Button>
+            </Box>
+          ) : (
+            <Button variant="outlined" fullWidth onClick={onAbrirModalVendedor}>Associar Vendedor</Button>
+          )}
 
+          {clienteSelecionado ? (
+            <Box sx={{ flex: 1, p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 1, textAlign: 'center' }}>
+              <Typography variant="body2">Cliente: {clienteSelecionado.nome}</Typography>
+              <Button size="small" onClick={onRemoverCliente}>Remover Cliente</Button>
+            </Box>
+          ) : (
+            <Button variant="outlined" fullWidth onClick={onAbrirModalCliente}>Associar Cliente</Button>
+          )}
+        </Stack>
         <Button
           variant="contained" color="success" size="large" onClick={handleFinalizar}
           disabled={carrinho.length === 0}

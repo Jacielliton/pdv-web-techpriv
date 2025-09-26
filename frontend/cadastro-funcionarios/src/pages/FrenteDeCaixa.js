@@ -21,6 +21,7 @@ import ModalMovimentacaoCaixa from '../components/ModalMovimentacaoCaixa';
 import ManagerOverrideDialog from '../components/ManagerOverrideDialog';
 import ModalSelecionarCliente from '../components/ModalSelecionarCliente';
 import ModalDesconto from '../components/ModalDesconto';
+import ModalSelecionarVendedor from '../components/ModalSelecionarVendedor';
 
 function FrenteDeCaixa() {
   const { isManager, caixaStatus, loadingCaixa } = useAuth();
@@ -31,6 +32,8 @@ function FrenteDeCaixa() {
   const [carrinho, setCarrinho] = useState([]);
   const [clienteSelecionado, setClienteSelecionado] = useState(null);
   const [desconto, setDesconto] = useState(0);  
+  const [vendedorSelecionado, setVendedorSelecionado] = useState(null);
+  
    
   // Estados de UI e Modais
   const [viewMode, setViewMode] = useState('grid');
@@ -38,6 +41,7 @@ function FrenteDeCaixa() {
   const [lastAddedId, setLastAddedId] = useState(null);
   const [vendaFinalizada, setVendaFinalizada] = useState(null);
   const [modalClienteOpen, setModalClienteOpen] = useState(false);
+  const [modalVendedorOpen, setModalVendedorOpen] = useState(false);
   const [modalDescontoOpen, setModalDescontoOpen] = useState(false);
   const [modalMovimentacaoOpen, setModalMovimentacaoOpen] = useState(false);
   const [tipoMovimentacao, setTipoMovimentacao] = useState('');
@@ -165,6 +169,7 @@ function FrenteDeCaixa() {
       itens: carrinho.map(item => ({ id: item.id, nome: item.nome, quantidade: item.quantidade, preco: item.preco })),
       cliente_id: clienteSelecionado ? clienteSelecionado.id : null,
       desconto: desconto,
+      vendedor_id: vendedorSelecionado ? vendedorSelecionado.id : null,
     };
     try {
       const response = await api.post('/vendas', payload);
@@ -177,6 +182,7 @@ function FrenteDeCaixa() {
       setCarrinho([]);
       setDesconto(0);
       setClienteSelecionado(null);
+      setVendedorSelecionado(null);
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erro crítico ao registrar a venda.');
     }
@@ -223,7 +229,8 @@ function FrenteDeCaixa() {
         toast.error('Erro ao carregar produtos.');
       }
     };
-    fetchProdutos();
+
+    fetchProdutos();    
   }, []); 
 
   const handleViewChange = (event, newView) => {
@@ -298,12 +305,16 @@ function FrenteDeCaixa() {
         onRemoverCliente={() => setClienteSelecionado(null)}
         onAbrirModalDesconto={() => setModalDescontoOpen(true)}
         onRemoverDesconto={() => setDesconto(0)}
+        vendedorSelecionado={vendedorSelecionado}
+        onAbrirModalVendedor={() => setModalVendedorOpen(true)}
+        onRemoverVendedor={() => setVendedorSelecionado(null)}
         ref={valorPagoInputRef} // Passando a ref para o componente filho
       />
 
       {/* RENDERIZAÇÃO DE TODOS OS MODAIS */}
       <ModalDesconto open={modalDescontoOpen} onClose={() => setModalDescontoOpen(false)} onAplicar={setDesconto} subtotal={subtotal} />
       <ModalSelecionarCliente open={modalClienteOpen} onClose={() => setModalClienteOpen(false)} onClienteSelecionado={setClienteSelecionado} />
+      <ModalSelecionarVendedor open={modalVendedorOpen} onClose={() => setModalVendedorOpen(false)} onVendedorSelecionado={setVendedorSelecionado} />
       <ModalMovimentacaoCaixa open={modalMovimentacaoOpen} onClose={() => setModalMovimentacaoOpen(false)} tipo={tipoMovimentacao} />
       <ManagerOverrideDialog open={overrideDialogOpen} onClose={() => setOverrideDialogOpen(false)} onConfirm={handleManagerAuthorize} error={overrideError} />
       <Dialog open={!!vendaFinalizada} onClose={() => setVendaFinalizada(null)}>

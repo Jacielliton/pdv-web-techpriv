@@ -30,6 +30,9 @@ routes.post('/login', SessionController.store);
 routes.use(authMiddleware);
 // ===================================================================
 
+// Mova a rota de listagem de funcionários para ANTES do middleware de gerente
+routes.get('/funcionarios', FuncionarioController.index);
+
 // --- Rotas para TODOS os funcionários logados (Caixas e Gerentes) ---
 routes.get('/produtos', ProdutoController.index);
 routes.post('/vendas', VendaController.store);
@@ -65,7 +68,6 @@ routes.use(authManagerMiddleware);
 // ===================================================================
 
 // --- Rotas exclusivas para GERENTES ---
-routes.get('/funcionarios', FuncionarioController.index);
 routes.post('/funcionarios', FuncionarioController.store);
 routes.put('/funcionarios/:id', FuncionarioController.update);
 routes.delete('/funcionarios/:id', FuncionarioController.delete);
