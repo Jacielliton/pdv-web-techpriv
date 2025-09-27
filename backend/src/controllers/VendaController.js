@@ -12,7 +12,7 @@ const ContaReceber = require('../models/ContaReceber');
 class VendaController {
   // Listar todas as vendas com detalhes
   async index(req, res) {
-    const { page = 1, limit = 10, dataInicio, dataFim, metodoPagamento, vendaId } = req.query;
+    const { page = 1, limit = 10, dataInicio, dataFim, metodoPagamento, vendaId, comDesconto } = req.query;
     const offset = parseInt(limit, 10) * (parseInt(page, 10) - 1);
 
     const whereClause = {};
@@ -30,23 +30,22 @@ class VendaController {
       whereClause.metodo_pagamento = metodoPagamento;
     }
 
-    // O middleware de autenticação já adicionou 'userId' e 'userCargo' ao objeto 'req'
-    const { userId, userCargo } = req;
+    if (comDesconto === 'true') {
+      whereClause.desconto = { [Op.gt]: 0 }; // Op.gt significa "greater than" (maior que)
+    }
 
-    // Se o usuário logado NÃO for um gerente, adicionamos uma condição extra
-    // para buscar apenas as vendas cujo 'funcionario_id' seja igual ao ID dele.
+    const { userId, userCargo } = req;
     if (userCargo !== 'gerente') {
       whereClause.funcionario_id = userId;
     }
 
     try {
-      // A consulta agora usa a 'whereClause' que pode ou não ter o filtro de funcionário
       const { count, rows: vendas } = await Venda.findAndCountAll({
         where: whereClause,
         order: [['data_venda', 'DESC']],
         include: [
           { model: Funcionario, attributes: ['nome'] },
-          { model: Funcionario, as: 'Vendedor', attributes: ['nome'] }, // Vendedor          
+          { model: Funcionario, as: 'Vendedor', attributes: ['nome'] },          
           { model: Cliente, attributes: ['nome'] },
           {
             model: VendaItem,

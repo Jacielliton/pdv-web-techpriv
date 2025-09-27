@@ -4,7 +4,7 @@ import api from '../services/api';
 import {
   Container, Typography, Accordion, AccordionSummary, AccordionDetails, List, ListItem,
   ListItemText, Grid, Box, CircularProgress, IconButton, Pagination, Paper, TextField,
-  Button, Select, MenuItem, FormControl, InputLabel, Chip, Tooltip
+  Button, Select, MenuItem, FormControl, InputLabel, Tooltip, FormControlLabel, Checkbox
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PrintIcon from '@mui/icons-material/Print';
@@ -18,7 +18,7 @@ function HistoricoVendas() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [filtros, setFiltros] = useState({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '' });
+  const [filtros, setFiltros] = useState({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '', comDesconto: false });
   const [filtrosAtivos, setFiltrosAtivos] = useState({});
   const [error, setError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -103,14 +103,24 @@ function HistoricoVendas() {
     }
   };
 
-  const handleFiltroChange = (e) => { setFiltros({ ...filtros, [e.target.name]: e.target.value }); };
-  const handleAplicarFiltros = () => { setPage(1); setFiltrosAtivos(filtros); };
+  const handleFiltroChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFiltros({
+      ...filtros,
+      [name]: type === 'checkbox' ? checked : value,
+    });
+  };
+  const handleAplicarFiltros = () => {
+    setPage(1);
+    setFiltrosAtivos(filtros);
+  };
 
   const handleLimparFiltros = () => {
     setPage(1);
-    setFiltros({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '' });
+    setFiltros({ vendaId: '', dataInicio: '', dataFim: '', metodoPagamento: '', comDesconto: false });
     setFiltrosAtivos({});
   };
+
   const handlePageChange = (event, value) => { setPage(value); };
 
   if (loading) return ( <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box> );
@@ -122,17 +132,11 @@ function HistoricoVendas() {
       
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">          
-          <Grid item xs={12} sm={4}><TextField name="vendaId" label="Buscar por ID" value={filtros.vendaId} onChange={handleFiltroChange} fullWidth size="small" /></Grid>
-          <Grid item xs={12} sm={4}><TextField name="dataInicio" label="Data Início" type="date" value={filtros.dataInicio} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
-          <Grid item xs={12} sm={4}><TextField name="dataFim" label="Data Fim" type="date" value={filtros.dataFim} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
-          <Grid item xs={12} sm={4}><FormControl fullWidth size="small">            
-            <Select 
-              name="metodoPagamento" 
-              value={filtros.metodoPagamento} 
-              label="Método Pagto." 
-              onChange={handleFiltroChange}
-              displayEmpty
-            >
+          <Grid item xs={12} sm={3}><TextField name="vendaId" label="Buscar por ID" value={filtros.vendaId} onChange={handleFiltroChange} fullWidth size="small" /></Grid>
+          <Grid item xs={12} sm={3}><TextField name="dataInicio" label="Data Início" type="date" value={filtros.dataInicio} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
+          <Grid item xs={12} sm={3}><TextField name="dataFim" label="Data Fim" type="date" value={filtros.dataFim} onChange={handleFiltroChange} fullWidth size="small" InputLabelProps={{ shrink: true }} /></Grid>
+          <Grid item xs={12} sm={3}><FormControl fullWidth size="small">            
+            <Select name="metodoPagamento" value={filtros.metodoPagamento} onChange={handleFiltroChange} displayEmpty>
               <MenuItem value=""><em>Método pagamento</em></MenuItem>
               <MenuItem value="Dinheiro">Dinheiro</MenuItem>
               <MenuItem value="Cartão de Crédito">Cartão de Crédito</MenuItem>
@@ -140,44 +144,64 @@ function HistoricoVendas() {
               <MenuItem value="Pix">Pix</MenuItem>
             </Select>
           </FormControl></Grid>
-          <Grid item xs={12} sm={4}><Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Filtrar</Button></Grid>
-          <Grid item xs={12} sm={4}><Button variant="outlined" onClick={handleLimparFiltros} fullWidth>Limpar Filtros</Button></Grid>
+          
+          {/* ========== ALTERAÇÃO 4: Adicionar o checkbox na tela ========== */}
+          <Grid item xs={12} sm={6}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={filtros.comDesconto}
+                  onChange={handleFiltroChange}
+                  name="comDesconto"
+                  color="primary"
+                />
+              }
+              label="Apenas vendas com desconto"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={3}><Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Filtrar</Button></Grid>
+          <Grid item xs={12} sm={3}><Button variant="outlined" onClick={handleLimparFiltros} fullWidth>Limpar Filtros</Button></Grid>
         </Grid>
       </Paper>
       
-      {vendas.map(venda => (
-        <Accordion key={venda.id}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={6}>
-                <Typography><strong>Venda #{venda.id}</strong> - {new Date(venda.data_venda).toLocaleString('pt-BR')}</Typography>
-              </Grid>
-              <Grid item xs={12} sm={5} sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
-                <Typography>Total: <strong>R$ {Number(venda.valor_total).toFixed(2)}</strong></Typography>
-                
-                <Tooltip title="Imprimir Recibo">
-                  <IconButton 
-                    onClick={(e) => { 
-                      e.stopPropagation();
-                      setVendaParaImprimir(venda); // Apenas define qual venda imprimir
-                    }} 
-                    color="primary"
-                  >
-                    <PrintIcon />
-                  </IconButton>
-                </Tooltip>
+      {vendas.map(venda => {
+        // ========== ALTERAÇÃO 5: Calcular o subtotal antes de renderizar ==========
+        const subtotal = Number(venda.valor_total) + Number(venda.desconto);
+        const temDesconto = Number(venda.desconto) > 0;
 
-                {venda.status === 'CONCLUIDA' && (
-                  <Tooltip title="Cancelar Venda">
-                    <IconButton onClick={(e) => handleCancelarClick(e, venda)} color="error">
-                      <CancelIcon />
-                    </IconButton>
+        return (
+          <Accordion key={venda.id}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Grid container spacing={2} alignItems="center" sx={{ width: '100%' }}>
+                <Grid item xs={12} md={5}>
+                  <Typography><strong>Venda #{venda.id}</strong> - {new Date(venda.data_venda).toLocaleString('pt-BR')}</Typography>
+                </Grid>
+                
+                {/* ========== ALTERAÇÃO 6: Exibir Subtotal, Desconto e Total ========== */}
+                <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
+                  <Typography variant="body2">Subtotal: R$ {subtotal.toFixed(2)}</Typography>
+                  
+                  {temDesconto && (
+                    <Typography variant="body2" color="error">- Desconto: R$ {Number(venda.desconto).toFixed(2)}</Typography>
+                  )}
+                  
+                  <Typography variant="body1"><strong>Total: R$ {Number(venda.valor_total).toFixed(2)}</strong></Typography>
+                </Grid>
+
+                <Grid item xs={12} md={1} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Tooltip title="Imprimir Recibo">
+                    <IconButton onClick={(e) => { e.stopPropagation(); setVendaParaImprimir(venda); }} color="primary"><PrintIcon /></IconButton>
                   </Tooltip>
-                )}
+                  {venda.status === 'CONCLUIDA' && (
+                    <Tooltip title="Cancelar Venda">
+                      <IconButton onClick={(e) => handleCancelarClick(e, venda)} color="error"><CancelIcon /></IconButton>
+                    </Tooltip>
+                  )}
+                </Grid>
               </Grid>
-            </Grid>
-          </AccordionSummary>
-          <AccordionDetails>
+            </AccordionSummary>
+            <AccordionDetails>
               <Box>
                 <Typography variant="subtitle1"><strong>Operador:</strong> {venda.Funcionario?.nome || 'N/A'}</Typography>
 
@@ -197,12 +221,13 @@ function HistoricoVendas() {
               </Box>
             </AccordionDetails>
         </Accordion>
-      ))}
+        )
+      })}
 
       {totalPages > 1 && (<Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" /></Box>)}
       
       <ConfirmDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onConfirm={handleConfirmCancelar} title="Confirmar Cancelamento" description={`Tem certeza que deseja cancelar a venda #${vendaParaCancelar?.id}? Esta ação não pode ser desfeita e o estoque dos produtos será estornado.`} />
-       <div style={{ display: 'none' }}>
+      <div style={{ display: 'none' }}>
         {vendaParaImprimir && <Recibo ref={reciboRef} venda={vendaParaImprimir} />}
       </div>
     </Container>

@@ -124,6 +124,7 @@ CREATE TABLE pagamentos_conta (
 );
 
 ALTER TABLE vendas ADD COLUMN vendedor_id INTEGER REFERENCES funcionarios(id);
+ALTER TABLE vendas ADD COLUMN desconto DECIMAL(10, 2) DEFAULT 0.00;
 
 -- PASSO 3: Insere o usuário Administrador/Gerente com o hash fornecido.
 INSERT INTO funcionarios (nome, email, senha_hash, cargo) VALUES 
