@@ -1,22 +1,21 @@
-// backend/src/controllers/RelatorioController.js
+// backend/src/controllers/RelatorioController.js (VERSÃO ATUALIZADA)
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const Venda = require('../models/Venda');
 const VendaItem = require('../models/VendaItem');
 const Produto = require('../models/Produto');
+// ADICIONADO: Importar o modelo Funcionario para fazer o JOIN
+const Funcionario = require('../models/Funcionario');
 
 class RelatorioController {
   
-  // Seu método getRelatorioVendas permanece o mesmo
   async getRelatorioVendas(req, res) {
-    // Pega as datas da query string (ex: /vendas?data_inicio=2025-09-01&data_fim=2025-09-18)
     const { data_inicio, data_fim } = req.query;
 
     if (!data_inicio || !data_fim) {
       return res.status(400).json({ error: 'As datas de início e fim são obrigatórias.' });
     }
 
-    // Garante que o período final inclua o dia inteiro
     const dataFimAjustada = new Date(data_fim);
     dataFimAjustada.setHours(23, 59, 59, 999);
 
@@ -27,11 +26,13 @@ class RelatorioController {
         },
       };
 
-      // 1. Cálculo dos totais gerais
+      // 1. Cálculo dos totais gerais (agora incluindo descontos)
       const resumoGeral = await Venda.findOne({
         attributes: [
           [sequelize.fn('COUNT', sequelize.col('id')), 'numeroDeVendas'],
           [sequelize.fn('SUM', sequelize.col('valor_total')), 'totalVendido'],
+          // ADICIONADO: Cálculo da soma de todos os descontos
+          [sequelize.fn('SUM', sequelize.col('desconto')), 'totalDescontos'],
         ],
         where: whereClause,
         raw: true,
@@ -59,7 +60,7 @@ class RelatorioController {
         }, {
           model: Venda,
           attributes: [],
-          where: whereClause, // Aplica o filtro de data na tabela de Vendas
+          where: whereClause,
         }],
         group: ['Produto.id'],
         order: [[sequelize.col('total_vendido'), 'DESC']],
@@ -67,20 +68,49 @@ class RelatorioController {
         raw: true,
       });
 
+      // 4. ADICIONADO: Cálculo dos top vendedores
+      const topVendedores = await Venda.findAll({
+        attributes: [
+          'vendedor_id',
+          [sequelize.fn('SUM', sequelize.col('valor_total')), 'totalVendido'],
+        ],
+        include: [{
+          model: Funcionario,
+          as: 'Vendedor', // Usando o alias definido no seu model
+          attributes: ['nome'],
+        }],
+        where: {
+          ...whereClause,
+          vendedor_id: { [Op.ne]: null } // Ignora vendas sem vendedor associado
+        },
+        group: ['vendedor_id', 'Vendedor.id'],
+        order: [[sequelize.col('totalVendido'), 'DESC']],
+        limit: 5, // Top 5 vendedores
+        raw: true,
+      });
+
+
       const relatorio = {
         periodo: {
           inicio: data_inicio,
           fim: data_fim,
         },
+        // ALTERADO: Adicionar o total de descontos ao resumo
         resumo: {
           totalVendido: parseFloat(resumoGeral.totalVendido) || 0,
           numeroDeVendas: parseInt(resumoGeral.numeroDeVendas, 10) || 0,
           ticketMedio: resumoGeral.numeroDeVendas > 0 ? (resumoGeral.totalVendido / resumoGeral.numeroDeVendas) : 0,
+          totalDescontos: parseFloat(resumoGeral.totalDescontos) || 0,
         },
         vendasPorMetodo,
         topProdutos: topProdutos.map(p => ({
             nome: p['Produto.nome'],
             total_vendido: parseInt(p.total_vendido, 10),
+        })),
+        // ADICIONADO: Adicionar os top vendedores ao relatório
+        topVendedores: topVendedores.map(v => ({
+            nome: v['Vendedor.nome'],
+            totalVendido: parseFloat(v.totalVendido)
         })),
       };
 
@@ -91,9 +121,7 @@ class RelatorioController {
     }
   }
 
-  // ===================================================================
-  // NOVO MÉTODO PARA O RELATÓRIO DE LUCRATIVIDADE
-  // ===================================================================
+  // O método getRelatorioLucratividade permanece o mesmo
   async getRelatorioLucratividade(req, res) {
     const { data_inicio, data_fim } = req.query;
     if (!data_inicio || !data_fim) {
