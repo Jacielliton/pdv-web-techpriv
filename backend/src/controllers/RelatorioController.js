@@ -6,6 +6,9 @@ const VendaItem = require('../models/VendaItem');
 const Produto = require('../models/Produto');
 // ADICIONADO: Importar o modelo Funcionario para fazer o JOIN
 const Funcionario = require('../models/Funcionario');
+const puppeteer = require('puppeteer'); // Importa o puppeteer
+const gerarRelatorioHTML = require('../templates/relatorioVendasTemplate'); // Importa o nosso template
+
 
 class RelatorioController {
   
@@ -31,12 +34,17 @@ class RelatorioController {
         attributes: [
           [sequelize.fn('COUNT', sequelize.col('id')), 'numeroDeVendas'],
           [sequelize.fn('SUM', sequelize.col('valor_total')), 'totalVendido'],
-          // ADICIONADO: Cálculo da soma de todos os descontos
           [sequelize.fn('SUM', sequelize.col('desconto')), 'totalDescontos'],
         ],
         where: whereClause,
         raw: true,
       });
+
+      // --- CORREÇÃO E ADIÇÃO DO FATURAMENTO BRUTO ---
+      const totalVendido = Number(resumoGeral.totalVendido) || 0;
+      const totalDescontos = Number(resumoGeral.totalDescontos) || 0;
+      const numeroDeVendas = Number(resumoGeral.numeroDeVendas) || 0;
+      const faturamentoBruto = totalVendido + totalDescontos;
 
       // 2. Cálculo do total por método de pagamento
       const vendasPorMetodo = await Venda.findAll({
@@ -91,33 +99,128 @@ class RelatorioController {
 
 
       const relatorio = {
-        periodo: {
-          inicio: data_inicio,
-          fim: data_fim,
-        },
-        // ALTERADO: Adicionar o total de descontos ao resumo
+        periodo: { inicio: data_inicio, fim: data_fim },
         resumo: {
-          totalVendido: parseFloat(resumoGeral.totalVendido) || 0,
-          numeroDeVendas: parseInt(resumoGeral.numeroDeVendas, 10) || 0,
-          ticketMedio: resumoGeral.numeroDeVendas > 0 ? (resumoGeral.totalVendido / resumoGeral.numeroDeVendas) : 0,
-          totalDescontos: parseFloat(resumoGeral.totalDescontos) || 0,
+          faturamentoBruto, // Adicionado aqui
+          totalVendido,
+          totalDescontos,
+          numeroDeVendas,
+          ticketMedio: numeroDeVendas > 0 ? (totalVendido / numeroDeVendas) : 0,
         },
         vendasPorMetodo,
-        topProdutos: topProdutos.map(p => ({
-            nome: p['Produto.nome'],
-            total_vendido: parseInt(p.total_vendido, 10),
-        })),
-        // ADICIONADO: Adicionar os top vendedores ao relatório
-        topVendedores: topVendedores.map(v => ({
-            nome: v['Vendedor.nome'],
-            totalVendido: parseFloat(v.totalVendido)
-        })),
+        topProdutos: topProdutos.map(p => ({ nome: p['Produto.nome'], total_vendido: parseInt(p.total_vendido, 10) })),
+        topVendedores: topVendedores.map(v => ({ nome: v['Vendedor.nome'], totalVendido: parseFloat(v.totalVendido) })),
       };
 
       return res.json(relatorio);
     } catch (error) {
       console.error("Erro ao gerar relatório de vendas:", error);
       return res.status(500).json({ error: 'Erro ao gerar relatório.', details: error.message });
+    }
+  }
+
+  // NOVO MÉTODO PARA GERAR O PDF
+  async gerarRelatorioVendasPDF(req, res) {
+    const { data_inicio, data_fim } = req.query;
+    if (!data_inicio || !data_fim) return res.status(400).json({ error: 'As datas de início e fim são obrigatórias.' });
+
+    const dataFimAjustada = new Date(data_fim);
+    dataFimAjustada.setHours(23, 59, 59, 999);
+    const whereClause = { data_venda: { [Op.between]: [new Date(data_inicio), dataFimAjustada] } };
+
+    try {
+      // --- CÁLCULO ROBUSTO DO RESUMO GERAL ---
+      const resumoGeral = await Venda.findOne({
+        attributes: [
+          [sequelize.fn('COUNT', sequelize.col('id')), 'numeroDeVendas'],
+          [sequelize.fn('SUM', sequelize.col('valor_total')), 'totalVendido'],
+          [sequelize.fn('SUM', sequelize.col('desconto')), 'totalDescontos'],
+        ],
+        where: whereClause, raw: true,
+      });
+
+      // --- CORREÇÃO PRINCIPAL: Garantir que os valores sejam números antes de somar ---
+      const totalVendido = Number(resumoGeral.totalVendido) || 0;
+      const totalDescontos = Number(resumoGeral.totalDescontos) || 0;
+      const numeroDeVendas = Number(resumoGeral.numeroDeVendas) || 0;
+      const faturamentoBruto = totalVendido + totalDescontos;
+
+      // 2. Busca os outros dados (vendedores, métodos)
+      const vendasPorMetodo = await Venda.findAll({
+        attributes: ['metodo_pagamento', [sequelize.fn('SUM', sequelize.col('valor_total')), 'total']],
+        where: whereClause, group: ['metodo_pagamento'], raw: true,
+      });
+
+      const topVendedores = await Venda.findAll({
+        attributes: [[sequelize.fn('SUM', sequelize.col('valor_total')), 'totalVendido']],
+        include: [{ model: Funcionario, as: 'Vendedor', attributes: ['nome'] }],
+        where: { ...whereClause, vendedor_id: { [Op.ne]: null } },
+        group: ['vendedor_id', 'Vendedor.id'], order: [[sequelize.col('totalVendido'), 'DESC']],
+        raw: true,
+      });
+      
+      // 3. BUSCA DETALHADA DE PRODUTOS (MAIS COMPLETA QUE A ORIGINAL)
+      const produtosVendidos = await VendaItem.findAll({
+        attributes: [
+          [sequelize.fn('SUM', sequelize.col('quantidade')), 'quantidade'],
+          [sequelize.fn('AVG', sequelize.col('preco_unitario')), 'precoMedio'],
+          [sequelize.fn('SUM', sequelize.literal('quantidade * preco_unitario')), 'receitaTotal'],
+        ],
+        include: [
+          { model: Produto, attributes: ['nome'] },
+          { model: Venda, attributes: [], where: whereClause, required: true },
+        ],
+        group: ['Produto.id'],
+        order: [[sequelize.col('receitaTotal'), 'DESC']],
+        raw: true,
+      });
+      
+      // 4. Monta o objeto de dados final para o template
+      const data = {
+        periodo: { inicio: data_inicio, fim: data_fim },
+        resumo: {
+          faturamentoBruto,
+          totalVendido,
+          totalDescontos,
+          numeroDeVendas,
+          ticketMedio: numeroDeVendas > 0 ? (totalVendido / numeroDeVendas) : 0,
+        },
+        vendasPorMetodo,
+        topVendedores: topVendedores.map(v => ({ nome: v['Vendedor.nome'], totalVendido: v.totalVendido })),
+        produtosVendidos: produtosVendidos.map(p => ({
+          nome: p['Produto.nome'],
+          quantidade: p.quantidade,
+          precoMedio: p.precoMedio,
+          receitaTotal: p.receitaTotal,
+        })),
+      };
+
+      // 5. Geração do PDF com Puppeteer
+      const browser = await puppeteer.launch({ headless: "new", args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+      const page = await browser.newPage();
+      
+      const htmlContent = gerarRelatorioHTML(data);
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '80px', right: '20px', bottom: '60px', left: '20px' },
+        displayHeaderFooter: true,
+        headerTemplate: `<div style="font-size: 8px; text-align: center; width: 100%; padding: 0 20px;">PDV - TechPriv | Relatório Gerencial de Vendas</div>`,
+        footerTemplate: `<div style="font-size: 8px; text-align: center; width: 100%; padding: 0 20px;">Gerado em: <span class='date'></span> | Página <span class='pageNumber'></span> de <span class='totalPages'></span></div>`,
+      });
+
+      await browser.close();
+
+      // 6. Envio do PDF para o cliente
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="relatorio-vendas-${data_inicio}-a-${data_fim}.pdf"`);
+      res.send(pdfBuffer);
+
+    } catch (error) {
+      console.error("Erro ao gerar PDF do relatório:", error);
+      res.status(500).json({ error: 'Erro ao gerar PDF.', details: error.message });
     }
   }
 

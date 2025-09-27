@@ -4,75 +4,177 @@ import api from '../services/api';
 import { toast } from 'react-toastify';
 import { 
   Container, Typography, Paper, Box, Grid, TextField, Button, CircularProgress, 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab 
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Tab, IconButton, Tooltip
 } from '@mui/material';
+
+// Ícones
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
-// ADICIONADO: Novos ícones para os cards
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import PaymentIcon from '@mui/icons-material/Payment';
+import CategoryIcon from '@mui/icons-material/Category';
+
 
 const getISODate = (date) => date.toISOString().split('T')[0];
-// ALTERADO: Garantir que o valor não seja nulo antes de formatar
 const formatCurrency = (value) => `R$ ${Number(value || 0).toFixed(2).replace('.', ',')}`;
 
 
 const StatCard = ({ title, value, icon, color }) => (
-    <Paper sx={{ p: 2, display: 'flex', alignItems: 'center', height: '100%', borderLeft: 4, borderColor: `${color}.main` }}>
+    <Paper 
+      elevation={4}
+      sx={{ 
+        p: 2, 
+        display: 'flex', 
+        alignItems: 'center', 
+        height: '100%', 
+        borderLeft: 4, 
+        borderColor: `${color}.main`,
+        transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+        '&:hover': {
+          transform: 'scale(1.03)',
+          boxShadow: 6,
+        }
+      }}
+    >
       <Box sx={{ flexGrow: 1 }}>
-        <Typography color="text.secondary">{title}</Typography>
+        <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>{title}</Typography>
         <Typography variant="h5" component="p" sx={{ fontWeight: 'bold' }}>{value}</Typography>
       </Box>
-      {icon}
+      {React.cloneElement(icon, { sx: { fontSize: 40 } })}
     </Paper>
 );
 
-// ALTERADO: Componente TabVendas agora exibe os novos dados
 const TabVendas = ({ data }) => (
     <Box>
+        {/* --- LAYOUT DOS CARDS ATUALIZADO PARA 5 COLUNAS EM TELAS GRANDES --- */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}><StatCard title="Total Vendido" value={formatCurrency(data.resumo.totalVendido)} icon={<MonetizationOnIcon color="action" />} color="success" /></Grid>
-            {/* ADICIONADO: Card com o total de descontos */}
-            <Grid item xs={12} sm={6} md={3}><StatCard title="Total de Descontos" value={formatCurrency(data.resumo.totalDescontos)} icon={<LocalOfferIcon color="action" />} color="error" /></Grid>
-            <Grid item xs={12} sm={6} md={3}><StatCard title="Nº de Vendas" value={data.resumo.numeroDeVendas} icon={<PointOfSaleIcon color="action" />} color="info" /></Grid>
-            <Grid item xs={12} sm={6} md={3}><StatCard title="Ticket Médio" value={formatCurrency(data.resumo.ticketMedio)} icon={<BarChartIcon color="action" />} color="warning" /></Grid>
+            {/* NOVO CARD DE FATURAMENTO BRUTO (SUBTOTAL) */}
+            <Grid item xs={12} sm={6} md={4} lg={2.4}>
+                <StatCard 
+                    title="Faturamento Bruto (Subtotal)" 
+                    value={formatCurrency(data.resumo.faturamentoBruto)} 
+                    icon={<ReceiptLongIcon color="action" />} 
+                    color="primary" 
+                />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2.4}>
+                <StatCard 
+                    title="Total de Descontos" 
+                    value={formatCurrency(data.resumo.totalDescontos)} 
+                    icon={<LocalOfferIcon color="action" />} 
+                    color="error" 
+                />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2.4}>
+                <StatCard 
+                    title="Total Líquido Vendido" 
+                    value={formatCurrency(data.resumo.totalVendido)} 
+                    icon={<MonetizationOnIcon color="action" />} 
+                    color="success" 
+                />
+            </Grid>
+            <Grid item xs={12} sm={6} md={6} lg={2.4}>
+                <StatCard 
+                    title="Nº de Vendas" 
+                    value={data.resumo.numeroDeVendas} 
+                    icon={<PointOfSaleIcon color="action" />} 
+                    color="info" 
+                />
+            </Grid>
+            <Grid item xs={12} sm={6} md={6} lg={2.4}>
+                <StatCard 
+                    title="Ticket Médio" 
+                    value={formatCurrency(data.resumo.ticketMedio)} 
+                    icon={<BarChartIcon color="action" />} 
+                    color="warning" 
+                />
+            </Grid>
         </Grid>
+        
         <Grid container spacing={3}>
-            {/* ALTERADO: Ajuste no layout para 3 colunas */}
-            <Grid item xs={12} md={4}>
-                <TableContainer component={Paper}><Typography variant="h6" sx={{ p: 2 }}>Vendas por Pagamento</Typography><Table><TableHead><TableRow><TableCell>Método</TableCell><TableCell align="right">Total</TableCell></TableRow></TableHead><TableBody>{data.vendasPorMetodo.map(item => ( <TableRow key={item.metodo_pagamento} hover><TableCell>{item.metodo_pagamento}</TableCell><TableCell align="right">{formatCurrency(item.total)}</TableCell></TableRow> ))}</TableBody></Table></TableContainer>
-            </Grid>
-            <Grid item xs={12} md={4}>
-                <TableContainer component={Paper}><Typography variant="h6" sx={{ p: 2 }}>Top 10 Produtos</Typography><Table><TableHead><TableRow><TableCell>Produto</TableCell><TableCell align="right">Quantidade</TableCell></TableRow></TableHead><TableBody>{data.topProdutos.map(item => ( <TableRow key={item.nome} hover><TableCell>{item.nome}</TableCell><TableCell align="right">{item.total_vendido}</TableCell></TableRow> ))}</TableBody></Table></TableContainer>
-            </Grid>
-            {/* ADICIONADO: Tabela com o Top 5 Vendedores */}
-            <Grid item xs={12} md={4}>
-              <TableContainer component={Paper}>
-                <Box sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
-                  <EmojiEventsIcon sx={{ mr: 1, color: 'goldenrod' }} />
-                  <Typography variant="h6">Top 5 Vendedores</Typography>
-                </Box>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Vendedor</TableCell>
-                      <TableCell align="right">Total Vendido</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {data.topVendedores?.map(vendedor => (
-                      <TableRow key={vendedor.nome} hover>
-                        <TableCell>{vendedor.nome}</TableCell>
-                        <TableCell align="right">{formatCurrency(vendedor.totalVendido)}</TableCell>
+            {/* --- ALTERADO: de 'lg={6}' para 'md={6}' para ativar em telas médias --- */}
+            <Grid item xs={12} md={6}>
+                <TableContainer component={Paper} elevation={4}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                    <PaymentIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    <Typography variant="h6">Vendas por Pagamento</Typography>
+                  </Box>
+                  <Table>
+                    <TableHead sx={{ backgroundColor: 'action.hover' }}>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Método</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 'bold' }}>Total</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {data.vendasPorMetodo.map(item => ( 
+                        <TableRow key={item.metodo_pagamento} hover sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.selected' } }}>
+                          <TableCell>{item.metodo_pagamento}</TableCell>
+                          <TableCell align="right">{formatCurrency(item.total)}</TableCell>
+                        </TableRow> 
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+            </Grid>
+            <Grid item>
+                  <TableContainer component={Paper} elevation={4}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                      <EmojiEventsIcon sx={{ mr: 1, color: 'goldenrod' }} />
+                      <Typography variant="h6">Top 5 Vendedores</Typography>
+                    </Box>
+                    <Table>
+                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 'bold' }}>Vendedor</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 'bold' }}>Total Vendido</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {data.topVendedores?.map(vendedor => (
+                          <TableRow key={vendedor.nome} hover sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.selected' } }}>
+                            <TableCell>{vendedor.nome}</TableCell>
+                            <TableCell align="right">{formatCurrency(vendedor.totalVendido)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Grid>
+
+            {/* --- ALTERADO: de 'lg={6}' para 'md={6}' para ativar em telas médias --- */}
+            <Grid item container xs={12} md={6} spacing={3} direction="column">
+                <Grid item>
+                  <TableContainer component={Paper} elevation={4}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+                      <CategoryIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                      <Typography variant="h6">Top 10 Produtos</Typography>
+                    </Box>
+                    <Table>
+                      <TableHead sx={{ backgroundColor: 'action.hover' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 'bold' }}>Produto</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 'bold' }}>Quantidade</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {data.topProdutos.map(item => ( 
+                          <TableRow key={item.nome} hover sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.selected' } }}>
+                            <TableCell>{item.nome}</TableCell>
+                            <TableCell align="right">{item.total_vendido}</TableCell>
+                          </TableRow> 
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Grid>               
             </Grid>
         </Grid>
     </Box>
@@ -105,6 +207,7 @@ function Relatorios() {
   const [relatorioVendas, setRelatorioVendas] = useState(null);
   const [relatorioLucro, setRelatorioLucro] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [aba, setAba] = useState(0);
 
   const handleGerarRelatorio = useCallback(async (abaAtual) => {
@@ -126,7 +229,52 @@ function Relatorios() {
 
   useEffect(() => {
     handleGerarRelatorio(0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ===================================================================
+  // FUNÇÃO DE GERAR PDF TOTALMENTE REFEITA
+  // ===================================================================
+  const handleGerarPDF = async () => {
+    if (aba !== 0) {
+      toast.info('A exportação para PDF está disponível apenas para o Relatório de Vendas.');
+      return;
+    }
+    setPdfLoading(true);
+    
+    try {
+      // 1. Faz a requisição com Axios, que envia o token de autenticação
+      const response = await api.get('/relatorios/vendas/pdf', {
+        params: {
+          data_inicio: dataInicio,
+          data_fim: dataFim,
+        },
+        responseType: 'blob', // 2. Informa ao Axios que a resposta é um arquivo binário
+      });
+
+      // 3. Cria uma URL temporária para o arquivo recebido (Blob)
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      
+      // 4. Cria um link invisível para iniciar o download
+      const link = document.createElement('a');
+      link.href = url;
+      const fileName = `relatorio-vendas-${dataInicio}-a-${dataFim}.pdf`;
+      link.setAttribute('download', fileName);
+      
+      // 5. Adiciona o link ao corpo do documento, clica nele e depois o remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url); // Libera a memória da URL temporária
+
+    } catch (error) {
+      toast.error('Erro ao gerar o PDF. Verifique o console para mais detalhes.');
+      console.error("Erro no download do PDF: ", error);
+    } finally {
+      // 6. Garante que o estado de loading seja desativado ao final
+      setPdfLoading(false);
+    }
+  };
 
   const handleTabChange = (event, newValue) => {
     setAba(newValue);
@@ -146,9 +294,30 @@ function Relatorios() {
 
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={4}><TextField label="Data de Início" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} /></Grid>
-          <Grid item xs={12} sm={4}><TextField label="Data de Fim" type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} /></Grid>
-          <Grid item xs={12} sm={4}><Button variant="contained" onClick={() => handleGerarRelatorio(aba)} disabled={loading} fullWidth sx={{ height: '56px' }}>{loading ? <CircularProgress size={24} /> : 'Gerar Relatório'}</Button></Grid>
+          <Grid item xs={12} sm={3}><TextField label="Data de Início" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} /></Grid>
+          <Grid item xs={12} sm={3}><TextField label="Data de Fim" type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} /></Grid>
+          
+          <Grid item xs={12} sm={6} container spacing={2} alignItems="center">
+            <Grid item xs={8}>
+              <Button variant="contained" onClick={() => handleGerarRelatorio(aba)} disabled={loading} fullWidth sx={{ height: '56px' }}>
+                {loading ? <CircularProgress size={24} /> : 'Gerar Relatório'}
+              </Button>
+            </Grid>
+            <Grid item xs={4}>
+                <Tooltip title="Gerar Relatório Detalhado em PDF">
+                    <span>
+                        <IconButton 
+                            color="primary" 
+                            onClick={handleGerarPDF} 
+                            disabled={pdfLoading || aba !== 0}
+                            sx={{ border: '1px solid', borderColor: 'primary.main', borderRadius: '4px', width: '100%', height: '56px' }}
+                        >
+                            {pdfLoading ? <CircularProgress size={24} /> : <PictureAsPdfIcon />}
+                        </IconButton>
+                    </span>
+                </Tooltip>
+            </Grid>
+          </Grid>
         </Grid>
       </Paper>
       
@@ -163,5 +332,6 @@ function Relatorios() {
     </Container>
   );
 }
+
 
 export default Relatorios;
