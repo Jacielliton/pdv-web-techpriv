@@ -22,6 +22,12 @@ Venda.init({
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+
+  desconto: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    defaultValue: 0.00,
+  },
   // --- CAMPO CORRIGIDO ---
   funcionario_id: {
     type: DataTypes.INTEGER,

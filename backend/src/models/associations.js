@@ -29,6 +29,10 @@ function applyAssociations() {
 
   // Relações de Venda
   Venda.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
+  Venda.belongsTo(Funcionario, { 
+    foreignKey: 'vendedor_id', 
+    as: 'Vendedor' // Apelido para diferenciar do operador
+  });
   Venda.belongsTo(Caixa, { foreignKey: 'caixa_id' });
   Venda.belongsTo(Cliente, { foreignKey: 'cliente_id' });
   Venda.hasMany(VendaItem, { foreignKey: 'venda_id' });

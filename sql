@@ -123,6 +123,8 @@ CREATE TABLE pagamentos_conta (
     caixa_id INTEGER NOT NULL REFERENCES caixas(id) ON DELETE RESTRICT
 );
 
+ALTER TABLE vendas ADD COLUMN vendedor_id INTEGER REFERENCES funcionarios(id);
+
 -- PASSO 3: Insere o usuário Administrador/Gerente com o hash fornecido.
 INSERT INTO funcionarios (nome, email, senha_hash, cargo) VALUES 
 ('Admin', 'admin@pdv.com', '$2b$08$TTWDh6C40HrrsHrhSdRhX.xfH783Mdukqmyr35sPtuwATABxlJ8fO', 'gerente');

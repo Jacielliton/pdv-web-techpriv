@@ -46,6 +46,7 @@ class VendaController {
         order: [['data_venda', 'DESC']],
         include: [
           { model: Funcionario, attributes: ['nome'] },
+          { model: Funcionario, as: 'Vendedor', attributes: ['nome'] }, // Vendedor          
           { model: Cliente, attributes: ['nome'] },
           {
             model: VendaItem,
@@ -106,6 +107,7 @@ class VendaController {
         include: [
           // Inclui o nome do funcionário que fez a venda
           { model: Funcionario, attributes: ['nome'] },
+          { model: Funcionario, as: 'Vendedor', attributes: ['nome'] }, // Vendedor          
           { model: Cliente, attributes: ['nome'] },
           // Inclui os itens da venda
           {

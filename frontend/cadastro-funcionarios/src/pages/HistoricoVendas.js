@@ -180,6 +180,10 @@ function HistoricoVendas() {
           <AccordionDetails>
               <Box>
                 <Typography variant="subtitle1"><strong>Operador:</strong> {venda.Funcionario?.nome || 'N/A'}</Typography>
+
+                {venda.Vendedor && (
+                  <Typography variant="subtitle1"><strong>Vendedor:</strong> {venda.Vendedor.nome}</Typography>
+                )}
                 
                 {venda.Cliente && (
                   <Typography variant="subtitle1"><strong>Cliente:</strong> {venda.Cliente.nome}</Typography>

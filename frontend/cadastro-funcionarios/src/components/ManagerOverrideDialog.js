@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+// frontend/src/components/ManagerOverrideDialog.js
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Typography } from '@mui/material';
 
-const ManagerOverrideDialog = ({ open, onClose, onConfirm, error }) => {
+// ========== INÍCIO DA ALTERAÇÃO ==========
+// Adicionamos a prop 'description' para customizar a mensagem
+const ManagerOverrideDialog = ({ open, onClose, onConfirm, error, description }) => {
+// ========== FIM DA ALTERAÇÃO ==========
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -9,13 +13,24 @@ const ManagerOverrideDialog = ({ open, onClose, onConfirm, error }) => {
     onConfirm(email, password);
   };
 
+  // Efeito para limpar os campos quando o modal for fechado
+  useEffect(() => {
+    if (!open) {
+      setEmail('');
+      setPassword('');
+    }
+  }, [open]);
+
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>Autorização de Gerente Requerida</DialogTitle>
       <DialogContent>
+        {/* ========== INÍCIO DA ALTERAÇÃO ========== */}
+        {/* Usamos a prop 'description' ou um texto padrão */}
         <Typography variant="body2" gutterBottom>
-          Para remover este item, por favor, insira as credenciais de um gerente.
+          {description || 'Esta ação requer credenciais de um gerente.'}
         </Typography>
+        {/* ========== FIM DA ALTERAÇÃO ========== */}
         <TextField
           autoFocus
           margin="dense"
@@ -36,6 +51,7 @@ const ManagerOverrideDialog = ({ open, onClose, onConfirm, error }) => {
           variant="standard"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleConfirm()}
         />
         {error && <Typography color="error" variant="caption">{error}</Typography>}
       </DialogContent>

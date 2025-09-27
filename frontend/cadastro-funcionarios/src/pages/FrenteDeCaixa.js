@@ -48,6 +48,7 @@ function FrenteDeCaixa() {
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [itemParaRemover, setItemParaRemover] = useState(null);
   const [overrideError, setOverrideError] = useState('');
+  const [overrideAction, setOverrideAction] = useState(null);
 
   // Refs
   const reciboRef = useRef(null);
@@ -118,6 +119,7 @@ function FrenteDeCaixa() {
       toast.info('Item removido pelo gerente.');
     } else {
       setItemParaRemover(produtoId);
+      setOverrideAction('removerItem');
       setOverrideDialogOpen(true);
       setOverrideError('');
     }
@@ -152,15 +154,32 @@ function FrenteDeCaixa() {
       const response = await axios.post('http://localhost:3333/api/login', { email, senha });
       if (response.data.funcionario?.cargo === 'gerente') {
         toast.success('Autorização concedida!');
-        setCarrinho(carrinhoAtual => carrinhoAtual.filter(item => item.id !== itemParaRemover));
+        if (overrideAction === 'removerItem') {
+          setCarrinho(carrinhoAtual => carrinhoAtual.filter(item => item.id !== itemParaRemover));
+        } else if (overrideAction === 'aplicarDesconto') {
+          setModalDescontoOpen(true); // Abre o modal de desconto após autorizar
+        }
         setOverrideDialogOpen(false);
+        setOverrideAction(null); // Limpa a ação
+        setItemParaRemover(null);
       } else {
         setOverrideError('Credenciais válidas, mas o usuário não é um gerente.');
       }
     } catch (error) {
       setOverrideError('E-mail ou senha de gerente inválidos.');
     }
-  }, [itemParaRemover]);
+  }, [itemParaRemover, overrideAction]);
+
+  // Nova função para controlar a abertura do modal de desconto
+  const handleAbrirModalDesconto = () => {
+    if (isManager) {
+      setModalDescontoOpen(true);
+    } else {
+      setOverrideAction('aplicarDesconto'); // Define a ação
+      setOverrideError('');
+      setOverrideDialogOpen(true);
+    }
+  };
 
   const finalizarVenda = useCallback(async (metodoPagamento, valorPago) => {
     const payload = {
@@ -182,11 +201,11 @@ function FrenteDeCaixa() {
       setCarrinho([]);
       setDesconto(0);
       setClienteSelecionado(null);
-      setVendedorSelecionado(null);
+      setVendedorSelecionado(null); // Aqui alteramos para setar null também
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erro crítico ao registrar a venda.');
     }
-  }, [carrinho, totalVenda, clienteSelecionado, desconto]);
+  }, [carrinho, totalVenda, clienteSelecionado, desconto, vendedorSelecionado]);
   
   const handleImprimirRecibo = () => {
     const node = reciboRef.current;
@@ -303,7 +322,7 @@ function FrenteDeCaixa() {
         onAbrirModalMovimentacao={(tipo) => { setTipoMovimentacao(tipo); setModalMovimentacaoOpen(true); }}
         onAbrirModalCliente={() => setModalClienteOpen(true)}
         onRemoverCliente={() => setClienteSelecionado(null)}
-        onAbrirModalDesconto={() => setModalDescontoOpen(true)}
+        onAbrirModalDesconto={handleAbrirModalDesconto}
         onRemoverDesconto={() => setDesconto(0)}
         vendedorSelecionado={vendedorSelecionado}
         onAbrirModalVendedor={() => setModalVendedorOpen(true)}
@@ -316,7 +335,17 @@ function FrenteDeCaixa() {
       <ModalSelecionarCliente open={modalClienteOpen} onClose={() => setModalClienteOpen(false)} onClienteSelecionado={setClienteSelecionado} />
       <ModalSelecionarVendedor open={modalVendedorOpen} onClose={() => setModalVendedorOpen(false)} onVendedorSelecionado={setVendedorSelecionado} />
       <ModalMovimentacaoCaixa open={modalMovimentacaoOpen} onClose={() => setModalMovimentacaoOpen(false)} tipo={tipoMovimentacao} />
-      <ManagerOverrideDialog open={overrideDialogOpen} onClose={() => setOverrideDialogOpen(false)} onConfirm={handleManagerAuthorize} error={overrideError} />
+      <ManagerOverrideDialog
+        open={overrideDialogOpen}
+        onClose={() => setOverrideDialogOpen(false)}
+        onConfirm={handleManagerAuthorize}
+        error={overrideError}
+        description={
+          overrideAction === 'removerItem'
+            ? 'Para remover este item, por favor, insira as credenciais de um gerente.'
+            : 'Para aplicar um desconto, por favor, insira as credenciais de um gerente.'
+        }
+      />
       <Dialog open={!!vendaFinalizada} onClose={() => setVendaFinalizada(null)}>
         <DialogTitle>Venda Finalizada com Sucesso!</DialogTitle>
         <DialogContent>
