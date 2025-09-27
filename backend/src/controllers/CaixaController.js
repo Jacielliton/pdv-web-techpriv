@@ -92,24 +92,46 @@ class CaixaController {
         await t.rollback();
         return res.status(404).json({ error: 'Nenhum caixa aberto para fechar.' });
       }
+      // 1. Buscamos o total de vendas em DINHEIRO (para calcular a diferença de caixa)
       const totalVendasDinheiro = await Venda.sum('valor_total', { where: { caixa_id: caixaAberto.id, metodo_pagamento: 'Dinheiro' }, transaction: t }) || 0;
-      // 3. BUSCA O TOTAL DE VENDAS A PRAZO REALIZADAS NESTE CAIXA
-      const totalVendasAPrazo = await Venda.sum('valor_total', { where: { caixa_id: caixaAberto.id, metodo_pagamento: 'A Prazo' }, transaction: t }) || 0;
+      
+      // 2. Buscamos o total GERAL de todas as vendas (para salvar no resumo final)
+      const totalGeralVendas = await Venda.sum('valor_total', { where: { caixa_id: caixaAberto.id }, transaction: t }) || 0;
+
+      // 3. Buscamos as outras movimentações de dinheiro
       const totalSuprimentos = await MovimentacaoCaixa.sum('valor', { where: { caixa_id: caixaAberto.id, tipo: 'SUPRIMENTO' }, transaction: t }) || 0;
       const totalSangrias = await MovimentacaoCaixa.sum('valor', { where: { caixa_id: caixaAberto.id, tipo: 'SANGRIA' }, transaction: t }) || 0;
       const totalPagamentosFiado = await PagamentoConta.sum('valor', {
         where: { caixa_id: caixaAberto.id, metodo_pagamento: 'Dinheiro' },
         transaction: t
       }) || 0;
-      const valorCalculado = (parseFloat(caixaAberto.valor_inicial) + totalVendasDinheiro + totalSuprimentos + totalPagamentosFiado) - totalSangrias;
+
+      // 4. Calculamos o VALOR ESPERADO EM DINHEIRO (para a conferência manual)
+      const valorEsperadoEmDinheiro = (
+          parseFloat(caixaAberto.valor_inicial) + 
+          totalVendasDinheiro + 
+          totalSuprimentos + 
+          totalPagamentosFiado
+      ) - totalSangrias;
       
       const valorInformado = parseFloat(valor_final_informado);
-      const diferenca = valorInformado - valorCalculado;
       
+      // 5. A diferença é calculada comparando o dinheiro contado com o dinheiro esperado
+      const diferenca = valorInformado - valorEsperadoEmDinheiro;
+      
+      // 6. Atualizamos o registro do caixa com os valores corretos
       const caixaFechado = await caixaAberto.update({
-        data_fechamento: new Date(), valor_final_calculado: valorCalculado,
-        valor_final_informado: valorInformado, diferenca: diferenca, status: 'FECHADO',
+        data_fechamento: new Date(), 
+        valor_final_calculado: totalGeralVendas, // <-- AGORA SALVA O TOTAL GERAL DE VENDAS
+        valor_final_informado: valorInformado, 
+        diferenca: diferenca, // <-- A diferença de caixa continua correta
+        status: 'FECHADO',
       }, { transaction: t });
+      
+      // ===================================================================
+      // FIM DAS MUDANÇAS
+      // ===================================================================
+
       await t.commit();
       return res.json(caixaFechado);
     } catch (error) {

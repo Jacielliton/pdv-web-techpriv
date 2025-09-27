@@ -8,7 +8,6 @@ const AuthContext = createContext({});
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  // --- Estados que estavam faltando para gerenciar o caixa ---
   const [caixaStatus, setCaixaStatus] = useState('FECHADO');
   const [loadingCaixa, setLoadingCaixa] = useState(true);
 
@@ -74,6 +73,7 @@ export const AuthProvider = ({ children }) => {
 
   async function signIn(credentials) {
     try {
+      // O endpoint correto já está a ser usado
       const response = await axios.post('http://localhost:3333/api/login', credentials);
       const { funcionario, token } = response.data;
       
@@ -83,9 +83,9 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.Authorization = `Bearer ${token}`;
       setUser(funcionario);
       
-      await checkCaixaStatus(); // Verifica o status do caixa logo após o login
+      await checkCaixaStatus();
     } catch (error) {
-      throw error;
+      throw error; 
     }
   }
 
@@ -106,7 +106,6 @@ export const AuthProvider = ({ children }) => {
         loading, 
         signIn, 
         signOut,
-        // --- Informações do caixa que estavam faltando ---
         caixaStatus,
         loadingCaixa,
         abrirCaixa,

@@ -229,10 +229,30 @@ function FrenteDeCaixa() {
   // HOOKS DE EFEITO E ATALHOS
   // ===================================================================
 
-  // Atalhos do Teclado
+  // Crie uma nova função para lidar com o atalho F10
+  const handleF10Hotkey = useCallback(() => {
+    // 1. Validação para garantir que o carrinho não está vazio
+    if (carrinho.length === 0) {
+      toast.warn('O carrinho está vazio. Adicione produtos antes de finalizar.');
+      return;
+    }
+
+    // 2. Ação principal: Chama a função para finalizar a venda,
+    //    passando 'Dinheiro' como o método de pagamento.
+    //    Este é o comportamento esperado para a tecla de atalho F10.
+    finalizarVenda('Dinheiro');
+
+  }, [carrinho, finalizarVenda]); // Adicionamos finalizarVenda às dependências do useCallback
+
+  // ===================================================================
+  // NENHUMA OUTRA ALTERAÇÃO É NECESSÁRIA
+  // ===================================================================
+
+
+  // Atalhos do Teclado (verifique se está assim)
   useHotkeys('F4', () => buscaInputRef.current?.focus());
   useHotkeys('F8', () => valorPagoInputRef.current?.focus());
-  useHotkeys('F10', finalizarVenda); 
+  useHotkeys('F10', handleF10Hotkey); // Esta linha já deve estar correta
   useHotkeys('Escape', handleLimparCarrinho);
   
   // Efeito para buscar produtos na montagem do componente

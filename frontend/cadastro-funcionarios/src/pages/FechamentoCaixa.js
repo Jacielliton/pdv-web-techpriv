@@ -13,6 +13,8 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline'; // Importe um ícone de "saída"
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+
 
 
 const formatCurrency = (value) => `R$ ${Number(value || 0).toFixed(2)}`;
@@ -142,7 +144,10 @@ function FechamentoCaixa() {
                 <ListItemText primary="Total de Sangrias" secondary={formatCurrency(resumo.totalSangrias)} />
               </ListItem>
               
-              {/* --- INFORMATIVO (NÃO AFETA O DINHEIRO EM CAIXA) --- */}
+              <Divider sx={{ my: 1 }} />             
+              
+
+              {/* --- INFORMATIVO (VENDAS A PRAZO) --- */}
               <ListItem>
                 <ListItemIcon><RemoveCircleOutlineIcon color="action" /></ListItemIcon>
                 <ListItemText 
@@ -151,20 +156,39 @@ function FechamentoCaixa() {
                     secondaryTypographyProps={{ style: { color: 'gray', fontStyle: 'italic' } }}
                 />
               </ListItem>
-
             </List>
-            <Divider sx={{ my: 2 }} />
-            <Box sx={{ p: 2, backgroundColor: 'action.hover', borderRadius: 1, textAlign: 'center' }}>
+            
+            <Divider sx={{ my: 2 }} />            
+          </Paper>
+        </Grid>
+
+        {/* O Lado direito (Conferência Manual) não precisa de alterações */}
+        <Grid item xs={12} md={6}>
+           {/* ... (código existente sem alterações) ... */}
+           <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <Typography variant="subtitle2" sx={{ pl: 2, color: 'text.secondary' }}>
+                Outros Pagamentos (Informativo)
+              </Typography>
+            {Object.entries(resumo.totaisPorPagamento)
+                // Filtramos para não mostrar 'Dinheiro' e 'A Prazo' novamente
+                .filter(([metodo]) => metodo !== 'Dinheiro' && metodo !== 'A Prazo')
+                .map(([metodo, total]) => (
+                  <ListItem key={metodo}>
+                    <ListItemIcon>
+                      <CreditCardIcon color="action" />
+                    </ListItemIcon>
+                    <ListItemText primary={`Vendas em ${metodo}`} secondary={formatCurrency(total)} />
+                  </ListItem>
+                ))
+              }
+
+              <Box sx={{ p: 2, backgroundColor: 'action.hover', borderRadius: 1, textAlign: 'center' }}>
                 <Typography variant="button" color="text.secondary">Total Esperado em Dinheiro</Typography>
                 <Typography variant="h4" component="p" sx={{ fontWeight: 'bold' }}>
                   {formatCurrency(totalEsperadoDinheiro)}
                 </Typography>
             </Box>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
+            
             <Typography variant="h6" gutterBottom>Conferência Manual</Typography>
             <TextField
               label="Valor Total Contado em Dinheiro"
@@ -177,7 +201,6 @@ function FechamentoCaixa() {
               autoFocus
             />
 
-            {/* Este alerta agora só atualiza após o delay, quando o cálculo é refeito */}
             {debouncedValorInformado !== '' && (
               <Alert 
                 severity={diferenca < 0 ? 'error' : (diferenca > 0 ? 'warning' : 'success')}
