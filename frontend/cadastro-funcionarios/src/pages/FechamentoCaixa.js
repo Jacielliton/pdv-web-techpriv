@@ -1,4 +1,4 @@
-// frontend/cadastro-funcionarios/src/pages/FechamentoCaixa.js (VERSÃO COM DEBOUNCE)
+// frontend/cadastro-funcionarios/src/pages/FechamentoCaixa.js (VERSÃO CORRIGIDA)
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -12,10 +12,9 @@ import {
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline'; // Importe um ícone de "saída"
 import CreditCardIcon from '@mui/icons-material/CreditCard';
-
-
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 
 const formatCurrency = (value) => `R$ ${Number(value || 0).toFixed(2)}`;
 
@@ -27,22 +26,17 @@ function FechamentoCaixa() {
   const [loading, setLoading] = useState(true);
   const [valorInformado, setValorInformado] = useState('');
   const [isClosing, setIsClosing] = useState(false);
-
-  // --- NOVO ESTADO PARA O DEBOUNCE ---
   const [debouncedValorInformado, setDebouncedValorInformado] = useState('');
 
-  // --- NOVO useEffect PARA APLICAR O DEBOUNCE ---
   useEffect(() => {
-    // Cria um timer que vai atualizar o valor "debounced" após 300ms
     const timerId = setTimeout(() => {
       setDebouncedValorInformado(valorInformado);
     }, 300);
 
-    // Função de limpeza: se o usuário digitar novamente, o timer anterior é cancelado
     return () => {
       clearTimeout(timerId);
     };
-  }, [valorInformado]); // Este efeito roda sempre que o 'valorInformado' muda
+  }, [valorInformado]);
 
   useEffect(() => {
     const fetchResumo = async () => {
@@ -59,22 +53,32 @@ function FechamentoCaixa() {
     fetchResumo();
   }, [navigate]);
 
-  // --- useMemo AGORA USA O VALOR "DEBOUNCED" PARA OS CÁLCULOS ---
-  const { totalEsperadoDinheiro, diferenca } = useMemo(() => {
-    if (!resumo) return { totalEsperadoDinheiro: 0, diferenca: 0 };
+  const totalEsperadoDinheiro = useMemo(() => {
+    if (!resumo) return 0;
     
-    // A LÓGICA DE CÁLCULO JÁ ESTÁ CORRETA AQUI, POIS ELA PEGA APENAS VENDAS EM DINHEIRO
-    const totalDinheiroVendas = resumo.totaisPorPagamento.Dinheiro || 0;
-    const valorEsperado = resumo.valor_inicial + totalDinheiroVendas + resumo.totalSuprimentos + resumo.totalPagamentosFiado - resumo.totalSangrias;
+    const vendasDinheiro = resumo.vendasPorMetodo?.Dinheiro || 0;
+    const pagamentosDinheiro = resumo.pagamentosDeContasPorMetodo?.Dinheiro || 0;
     
-    const valorContado = parseFloat(debouncedValorInformado) || 0;
-    const diff = valorContado - valorEsperado;
-    return { totalEsperadoDinheiro: valorEsperado, diferenca: diff };
-  }, [resumo, debouncedValorInformado]);
+    return resumo.valor_inicial + vendasDinheiro + pagamentosDinheiro + resumo.totalSuprimentos - resumo.totalSangrias;
+  }, [resumo]);
 
+  const diferenca = useMemo(() => {
+    const valorContado = parseFloat(debouncedValorInformado) || 0;
+    return valorContado - totalEsperadoDinheiro;
+  }, [debouncedValorInformado, totalEsperadoDinheiro]);
+
+  // MOVIDO PARA CIMA: Para seguir a Regra dos Hooks, este useMemo deve vir antes de qualquer retorno condicional.
+  const todosMetodos = useMemo(() => {
+    if (!resumo) return []; // Retorna um array vazio se o resumo ainda não chegou
+    
+    const metodos = new Set([
+      ...Object.keys(resumo.vendasPorMetodo || {}),
+      ...Object.keys(resumo.pagamentosDeContasPorMetodo || {})
+    ]);
+    return Array.from(metodos);
+  }, [resumo]);
 
   const handleFecharCaixa = async () => {
-    // ... (esta função permanece exatamente a mesma)
     if (valorInformado === '' || isNaN(parseFloat(valorInformado))) {
       toast.error('Por favor, informe o valor total contado em dinheiro.');
       return;
@@ -106,7 +110,7 @@ function FechamentoCaixa() {
       </Box>
     );
   }
-  
+
   return (
     <Container maxWidth="md">
       <Typography variant="h4" component="h1" gutterBottom>
@@ -114,89 +118,87 @@ function FechamentoCaixa() {
       </Typography>
 
       <Grid container spacing={4}>
+        {/* PAINEL DA ESQUERDA: RESUMO DE DINHEIRO */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2, height: '100%' }}>
-            <Typography variant="h6" gutterBottom>Resumo do Sistema</Typography>
+            <Typography variant="h6" gutterBottom>Resumo do Sistema (em Dinheiro)</Typography>
             <List>
-              {/* --- ENTRADAS DE DINHEIRO --- */}
+              {/* ENTRADAS DE DINHEIRO */}
               <ListItem>
                 <ListItemIcon><ArrowUpwardIcon color="success" /></ListItemIcon>
                 <ListItemText primary="Valor de Abertura (Troco)" secondary={formatCurrency(resumo.valor_inicial)} />
               </ListItem>
               <ListItem>
                 <ListItemIcon><AttachMoneyIcon color="success" /></ListItemIcon>
-                <ListItemText primary="Vendas em Dinheiro" secondary={formatCurrency(resumo.totaisPorPagamento.Dinheiro)} />
+                <ListItemText primary="Vendas em Dinheiro" secondary={formatCurrency(resumo.vendasPorMetodo.Dinheiro)} />
               </ListItem>
               <ListItem>
-                <ListItemIcon><AttachMoneyIcon color="success" /></ListItemIcon>
-                <ListItemText primary="Pagamentos de Contas (Fiado)" secondary={formatCurrency(resumo.totalPagamentosFiado)} />
+                <ListItemIcon><ReceiptLongIcon color="success" /></ListItemIcon>
+                <ListItemText primary="Pagamentos de Contas (Dinheiro)" secondary={formatCurrency(resumo.pagamentosDeContasPorMetodo.Dinheiro)} />
               </ListItem>
+              <Divider sx={{ my: 1 }} />
               <ListItem>
                 <ListItemIcon><ArrowUpwardIcon color="success" /></ListItemIcon>
                 <ListItemText primary="Total de Suprimentos" secondary={formatCurrency(resumo.totalSuprimentos)} />
-              </ListItem>
-
-              <Divider sx={{ my: 1 }} />
-
-              {/* --- SAÍDAS DE DINHEIRO --- */}
+              </ListItem>              
+              {/* SAÍDAS DE DINHEIRO */}
               <ListItem>
                 <ListItemIcon><ArrowDownwardIcon color="error" /></ListItemIcon>
                 <ListItemText primary="Total de Sangrias" secondary={formatCurrency(resumo.totalSangrias)} />
               </ListItem>
-              
-              <Divider sx={{ my: 1 }} />             
-              
-
-              {/* --- INFORMATIVO (VENDAS A PRAZO) --- */}
-              <ListItem>
-                <ListItemIcon><RemoveCircleOutlineIcon color="action" /></ListItemIcon>
-                <ListItemText 
-                    primary="Vendas a Prazo (Fiado)" 
-                    secondary={formatCurrency(resumo.totalVendasAPrazo)}
-                    secondaryTypographyProps={{ style: { color: 'gray', fontStyle: 'italic' } }}
-                />
-              </ListItem>
             </List>
-            
-            <Divider sx={{ my: 2 }} />            
           </Paper>
         </Grid>
 
-        {/* O Lado direito (Conferência Manual) não precisa de alterações */}
+        {/* PAINEL DA DIREITA: CONFERÊNCIA E OUTROS PAGAMENTOS */}
         <Grid item xs={12} md={6}>
-           {/* ... (código existente sem alterações) ... */}
-           <Paper sx={{ p: 3, display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <Typography variant="subtitle2" sx={{ pl: 2, color: 'text.secondary' }}>
+           <Paper sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>
                 Outros Pagamentos (Informativo)
-              </Typography>
-            {Object.entries(resumo.totaisPorPagamento)
-                // Filtramos para não mostrar 'Dinheiro' e 'A Prazo' novamente
-                .filter(([metodo]) => metodo !== 'Dinheiro' && metodo !== 'A Prazo')
-                .map(([metodo, total]) => (
-                  <ListItem key={metodo}>
-                    <ListItemIcon>
-                      <CreditCardIcon color="action" />
-                    </ListItemIcon>
-                    <ListItemText primary={`Vendas em ${metodo}`} secondary={formatCurrency(total)} />
-                  </ListItem>
+            </Typography>
+            <List dense>
+              {todosMetodos
+                .filter(metodo => metodo !== 'Dinheiro')
+                .map(metodo => (
+                  <React.Fragment key={metodo}>
+                    <ListItem>
+                      <ListItemIcon><CreditCardIcon color="action" /></ListItemIcon>
+                      <ListItemText primaryTypographyProps={{ fontWeight: 'bold' }}>{metodo}</ListItemText>
+                    </ListItem>
+                    {(resumo.vendasPorMetodo[metodo] > 0) && (
+                      <ListItem sx={{ pl: 5 }}>
+                        <ListItemIcon><PointOfSaleIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText primary="Vendas" secondary={formatCurrency(resumo.vendasPorMetodo[metodo])} />
+                      </ListItem>
+                    )}
+                    {(resumo.pagamentosDeContasPorMetodo[metodo] > 0) && (
+                       <ListItem sx={{ pl: 5 }}>
+                        <ListItemIcon><ReceiptLongIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText primary="Pag. de Contas" secondary={formatCurrency(resumo.pagamentosDeContasPorMetodo[metodo])} />
+                      </ListItem>
+                    )}
+                    <Divider sx={{ my: 1 }} />
+                  </React.Fragment>
                 ))
               }
-
-              <Box sx={{ p: 2, backgroundColor: 'action.hover', borderRadius: 1, textAlign: 'center' }}>
-                <Typography variant="button" color="text.secondary">Total Esperado em Dinheiro</Typography>
-                <Typography variant="h4" component="p" sx={{ fontWeight: 'bold' }}>
-                  {formatCurrency(totalEsperadoDinheiro)}
-                </Typography>
+            </List>
+            <Divider sx={{ my: 2 }} />
+                
+            <Box sx={{ p: 2, backgroundColor: 'action.hover', borderRadius: 1, textAlign: 'center' }}>
+              <Typography variant="button" color="text.secondary">Total Esperado em Dinheiro</Typography>
+              <Typography variant="h4" component="p" sx={{ fontWeight: 'bold' }}>
+                {formatCurrency(totalEsperadoDinheiro)}
+              </Typography>
             </Box>
             
-            <Typography variant="h6" gutterBottom>Conferência Manual</Typography>
+            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>Conferência Manual</Typography>
             <TextField
               label="Valor Total Contado em Dinheiro"
               type="number"
               fullWidth
               value={valorInformado}
               onChange={(e) => setValorInformado(e.target.value)}
-              sx={{ mt: 2, mb: 3 }}
+              sx={{ mt: 1, mb: 2 }}
               InputProps={{ startAdornment: <Typography sx={{ mr: 1 }}>R$</Typography> }}
               autoFocus
             />
@@ -204,13 +206,10 @@ function FechamentoCaixa() {
             {debouncedValorInformado !== '' && (
               <Alert 
                 severity={diferenca < 0 ? 'error' : (diferenca > 0 ? 'warning' : 'success')}
-                sx={{ mb: 3 }}
+                sx={{ mb: 2 }}
               >
-                <Typography variant="h6">
-                  Diferença: {formatCurrency(diferenca)}
-                  {diferenca < 0 && ' (Quebra de caixa)'}
-                  {diferenca > 0 && ' (Sobra de caixa)'}
-                  {diferenca === 0 && ' (Caixa correto)'}
+                <Typography variant="body1">
+                  Diferença: <strong>{formatCurrency(diferenca)}</strong>
                 </Typography>
               </Alert>
             )}
@@ -223,9 +222,8 @@ function FechamentoCaixa() {
                 fullWidth
                 onClick={handleFecharCaixa}
                 disabled={isClosing}
-                sx={{ p: 1.5 }}
               >
-                {isClosing ? <CircularProgress size={26} color="inherit" /> : 'Confirmar Fechamento do Caixa'}
+                {isClosing ? <CircularProgress size={24} color="inherit" /> : 'Confirmar Fechamento do Caixa'}
               </Button>
             </Box>
           </Paper>
