@@ -8,6 +8,7 @@ const Produto = require('../models/Produto');
 const Funcionario = require('../models/Funcionario');
 const puppeteer = require('puppeteer'); // Importa o puppeteer
 const gerarRelatorioHTML = require('../templates/relatorioVendasTemplate'); // Importa o nosso template
+const gerarRelatorioLucratividadeHTML = require('../templates/relatorioLucratividadeTemplate');
 
 
 class RelatorioController {
@@ -284,6 +285,85 @@ class RelatorioController {
       return res.status(500).json({ error: 'Erro ao gerar relatório de lucratividade.', details: error.message });
     }
   }
+
+  async gerarRelatorioLucratividadePDF(req, res) {
+    const { data_inicio, data_fim } = req.query;
+    if (!data_inicio || !data_fim) {
+    return res.status(400).json({ error: 'As datas de início e fim são obrigatórias.' });
+    }
+    const dataFimAjustada = new Date(data_fim);
+    dataFimAjustada.setHours(23, 59, 59, 999);
+    const whereClauseVendas = { data_venda: { [Op.between]: [new Date(data_inicio), dataFimAjustada] } };
+
+    try {
+    const itensVendidos = await VendaItem.findAll({
+        include: [
+        { model: Produto, attributes: ['nome', 'preco_custo'] },
+        { model: Venda, attributes: [], where: whereClauseVendas },
+        ],
+        raw: true,
+    });
+
+    let faturamentoBruto = 0;
+    let custoTotal = 0;
+    const produtosCalculados = {};
+
+    itensVendidos.forEach(item => {
+        const precoVenda = parseFloat(item.preco_unitario);
+        const precoCusto = parseFloat(item['Produto.preco_custo']) || 0;
+        const quantidade = item.quantidade;
+        const nomeProduto = item['Produto.nome'];
+
+        faturamentoBruto += precoVenda * quantidade;
+        custoTotal += precoCusto * quantidade;
+
+        if (!produtosCalculados[nomeProduto]) {
+        produtosCalculados[nomeProduto] = { nome: nomeProduto, lucroTotal: 0 };
+        }
+        produtosCalculados[nomeProduto].lucroTotal += (precoVenda - precoCusto) * quantidade;
+    });
+
+    const lucroBruto = faturamentoBruto - custoTotal;
+    const margemLucro = faturamentoBruto > 0 ? (lucroBruto / faturamentoBruto) * 100 : 0;
+
+    const rankingProdutos = Object.values(produtosCalculados).sort((a, b) => b.lucroTotal - a.lucroTotal);
+
+    const data = {
+        periodo: { inicio: data_inicio, fim: data_fim },
+        resumo: { faturamentoBruto, custoTotal, lucroBruto, margemLucro },
+        top5MaisLucrativos: rankingProdutos.slice(0, 5),
+        top5MenosLucrativos: rankingProdutos.slice(-5).reverse(),
+    };
+
+    // Geração do PDF com Puppeteer
+    const browser = await puppeteer.launch({ headless: "new", args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    const page = await browser.newPage();
+
+    const htmlContent = gerarRelatorioLucratividadeHTML(data);
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+    const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '80px', right: '20px', bottom: '60px', left: '20px' },
+        displayHeaderFooter: true,
+        headerTemplate: `<div style="font-size: 8px; text-align: center; width: 100%; padding: 0 20px;">PDV - TechPriv | Relatório Gerencial de Lucratividade</div>`,
+        footerTemplate: `<div style="font-size: 8px; text-align: center; width: 100%; padding: 0 20px;">Gerado em: <span class='date'></span> | Página <span class='pageNumber'></span> de <span class='totalPages'></span></div>`,
+    });
+
+    await browser.close();
+
+    // Envio do PDF para o cliente
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="relatorio-lucratividade-${data_inicio}-a-${data_fim}.pdf"`);
+    res.send(pdfBuffer);
+
+    } catch (error) {
+    console.error("Erro ao gerar PDF de lucratividade:", error);
+    return res.status(500).json({ error: 'Erro ao gerar PDF de lucratividade.', details: error.message });
+    }
+}
+
 }
 
 module.exports = new RelatorioController();

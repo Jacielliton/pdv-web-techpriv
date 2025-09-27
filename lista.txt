@@ -1,4 +1,4 @@
-PROMPT CMD: for /f "delims=" %i in ('dir "C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv" /b /s ^| findstr /v /i "node_modules" ^| findstr /v /i ".git"') do @echo %i >> lista.txt
+for /f "delims=" %i in ('dir "C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv" /b /s ^| findstr /v /i "node_modules" ^| findstr /v /i ".git"') do @echo %i >> lista.txt
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\sql 
@@ -14,6 +14,7 @@ C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\middlewares
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\models 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\routes 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\server.js 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\templates 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\__tests__ 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\config\database.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\controllers\CaixaController.js 
@@ -42,6 +43,8 @@ C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\models\Prod
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\models\Venda.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\models\VendaItem.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\routes\index.js 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\templates\relatorioLucratividadeTemplate.js 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\templates\relatorioVendasTemplate.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\__tests__\api.test.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\package-lock.json 

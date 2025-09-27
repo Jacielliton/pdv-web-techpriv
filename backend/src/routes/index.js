@@ -86,6 +86,8 @@ routes.get('/caixas/movimentacoes', CaixaController.getMovimentacoes);
 routes.get('/relatorios/vendas', RelatorioController.getRelatorioVendas);
 routes.get('/relatorios/vendas/pdf', RelatorioController.gerarRelatorioVendasPDF);
 routes.get('/relatorios/lucratividade', RelatorioController.getRelatorioLucratividade);
+routes.get('/relatorios/lucratividade/pdf', RelatorioController.gerarRelatorioLucratividadePDF);
+
 
 // ROTAS DE GERENCIAMENTO DE CLIENTES (permanecem exclusivas para gerentes)
 routes.get('/clientes/:id', ClienteController.show);

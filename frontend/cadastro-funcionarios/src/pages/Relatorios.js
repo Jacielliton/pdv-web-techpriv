@@ -236,42 +236,34 @@ function Relatorios() {
   // FUNÇÃO DE GERAR PDF TOTALMENTE REFEITA
   // ===================================================================
   const handleGerarPDF = async () => {
-    if (aba !== 0) {
-      toast.info('A exportação para PDF está disponível apenas para o Relatório de Vendas.');
-      return;
-    }
     setPdfLoading(true);
     
+    // Define o endpoint e o nome do arquivo com base na aba ativa
+    const isVendas = aba === 0;
+    const endpoint = isVendas ? '/relatorios/vendas/pdf' : '/relatorios/lucratividade/pdf';
+    const reportName = isVendas ? 'vendas' : 'lucratividade';
+
     try {
-      // 1. Faz a requisição com Axios, que envia o token de autenticação
-      const response = await api.get('/relatorios/vendas/pdf', {
-        params: {
-          data_inicio: dataInicio,
-          data_fim: dataFim,
-        },
-        responseType: 'blob', // 2. Informa ao Axios que a resposta é um arquivo binário
+      const response = await api.get(endpoint, {
+        params: { data_inicio: dataInicio, data_fim: dataFim },
+        responseType: 'blob',
       });
 
-      // 3. Cria uma URL temporária para o arquivo recebido (Blob)
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      
-      // 4. Cria um link invisível para iniciar o download
       const link = document.createElement('a');
       link.href = url;
-      const fileName = `relatorio-vendas-${dataInicio}-a-${dataFim}.pdf`;
+      const fileName = `relatorio-${reportName}-${dataInicio}-a-${dataFim}.pdf`;
       link.setAttribute('download', fileName);
       
-      // 5. Adiciona o link ao corpo do documento, clica nele e depois o remove
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url); // Libera a memória da URL temporária
+      window.URL.revokeObjectURL(url);
 
     } catch (error) {
       toast.error('Erro ao gerar o PDF. Verifique o console para mais detalhes.');
       console.error("Erro no download do PDF: ", error);
     } finally {
-      // 6. Garante que o estado de loading seja desativado ao final
       setPdfLoading(false);
     }
   };
@@ -280,6 +272,7 @@ function Relatorios() {
     setAba(newValue);
     handleGerarRelatorio(newValue);
   };
+
 
   return (
     <Container maxWidth="xl">
@@ -298,26 +291,28 @@ function Relatorios() {
           <Grid item xs={12} sm={3}><TextField label="Data de Fim" type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} /></Grid>
           
           <Grid item xs={12} sm={6} container spacing={2} alignItems="center">
-            <Grid item xs={8}>
-              <Button variant="contained" onClick={() => handleGerarRelatorio(aba)} disabled={loading} fullWidth sx={{ height: '56px' }}>
-                {loading ? <CircularProgress size={24} /> : 'Gerar Relatório'}
-              </Button>
-            </Grid>
-            <Grid item xs={4}>
-                <Tooltip title="Gerar Relatório Detalhado em PDF">
-                    <span>
-                        <IconButton 
-                            color="primary" 
-                            onClick={handleGerarPDF} 
-                            disabled={pdfLoading || aba !== 0}
-                            sx={{ border: '1px solid', borderColor: 'primary.main', borderRadius: '4px', width: '100%', height: '56px' }}
-                        >
-                            {pdfLoading ? <CircularProgress size={24} /> : <PictureAsPdfIcon />}
-                        </IconButton>
-                    </span>
-                </Tooltip>
-            </Grid>
-          </Grid>
+                    <Grid item xs={8}>
+                        <Button variant="contained" onClick={() => handleGerarRelatorio(aba)} disabled={loading} fullWidth sx={{ height: '56px' }}>
+                            {loading ? <CircularProgress size={24} /> : 'Gerar Relatório'}
+                        </Button>
+                    </Grid>
+                    <Grid item xs={4}>
+                        {/* --- ATUALIZAÇÃO DO BOTÃO DE PDF --- */}
+                        <Tooltip title="Gerar Relatório Detalhado em PDF">
+                            <span>
+                                <IconButton 
+                                    color="primary" 
+                                    onClick={handleGerarPDF} 
+                                    // Agora o botão fica desabilitado apenas durante o loading
+                                    disabled={pdfLoading} 
+                                    sx={{ border: '1px solid', borderColor: 'primary.main', borderRadius: '4px', width: '100%', height: '56px' }}
+                                >
+                                    {pdfLoading ? <CircularProgress size={24} /> : <PictureAsPdfIcon />}
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    </Grid>
+                </Grid>
         </Grid>
       </Paper>
       
