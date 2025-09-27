@@ -203,7 +203,7 @@ class CaixaController {
         return res.status(404).json({ error: 'Caixa não encontrado.' });
       }
 
-      const [vendas, movimentacoes] = await Promise.all([
+      const [vendas, movimentacoes, pagamentosDeContas] = await Promise.all([
         Venda.findAll({
           where: { caixa_id: id },
           attributes: ['metodo_pagamento', [sequelize.fn('SUM', sequelize.col('valor_total')), 'total']],
@@ -215,24 +215,37 @@ class CaixaController {
           attributes: ['tipo', [sequelize.fn('SUM', sequelize.col('valor')), 'total']],
           group: ['tipo'],
           raw: true,
-        })
+        }),
+        // ESTA PARTE É ESSENCIAL
+        PagamentoConta.findAll({
+          where: { caixa_id: id },
+          attributes: ['metodo_pagamento', [sequelize.fn('SUM', sequelize.col('valor')), 'total']],
+          group: ['metodo_pagamento'],
+          raw: true,
+        }),
       ]);
 
       const detalhes = {
         caixa: caixa.toJSON(),
         vendasPorMetodo: {},
+        pagamentosDeContasPorMetodo: {}, // Objeto deve ser inicializado
         movimentacoes: { SANGRIA: 0, SUPRIMENTO: 0 }
       };
 
       vendas.forEach(v => { detalhes.vendasPorMetodo[v.metodo_pagamento] = parseFloat(v.total); });
       movimentacoes.forEach(m => { detalhes.movimentacoes[m.tipo] = parseFloat(m.total); });
+      
+      // E ESTA TAMBÉM É ESSENCIAL
+      pagamentosDeContas.forEach(p => { 
+        detalhes.pagamentosDeContasPorMetodo[p.metodo_pagamento] = parseFloat(p.total); 
+      });
 
       return res.json(detalhes);
     } catch (error) {
       console.error("Erro ao buscar detalhes do caixa:", error);
       return res.status(500).json({ error: 'Erro ao buscar detalhes do caixa.', details: error.message });
     }
-  }
+}
 
   async getMovimentacoes(req, res) {
     const { page = 1, limit = 15, dataInicio, dataFim, tipo } = req.query;
