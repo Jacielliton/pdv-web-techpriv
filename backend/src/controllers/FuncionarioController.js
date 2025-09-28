@@ -26,7 +26,49 @@ class FuncionarioController {
       return res.status(500).json({ error: 'Erro ao listar funcionários.' });
     }
   }
-  // -------------------------
+  
+  async autorizarAcao(req, res) {
+    const { email, senha } = req.body;
+
+    if (!email || !senha) {
+      return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
+    }
+
+    try {
+      const funcionario = await Funcionario.findOne({
+        where: { email },
+        attributes: { include: ['senha_hash'] } // Inclui o hash da senha para a verificação
+      });
+
+      if (!funcionario) {
+        return res.status(401).json({ error: 'Credenciais inválidas.' });
+      }
+
+      // Verifica a senha
+      const senhaCorreta = await funcionario.checkPassword(senha);
+      if (!senhaCorreta) {
+        return res.status(401).json({ error: 'Credenciais inválidas.' });
+      }
+      
+      // Verifica o cargo
+      if (funcionario.cargo !== 'gerente' && funcionario.cargo !== 'supervisor') {
+        return res.status(403).json({ error: 'Usuário não tem permissão para autorizar esta ação.' });
+      }
+
+      // Se tudo estiver correto, retorna sucesso
+      return res.json({ 
+        message: 'Autorização concedida!',
+        funcionario: {
+          id: funcionario.id,
+          nome: funcionario.nome,
+          cargo: funcionario.cargo,
+        }
+      });
+
+    } catch (error) {
+      return res.status(500).json({ error: 'Erro interno ao tentar autorizar ação.' });
+    }
+  }
 
   // Método para cadastrar um novo funcionário
   async store(req, res) {

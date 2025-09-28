@@ -1,6 +1,9 @@
 for /f "delims=" %i in ('dir "C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv" /b /s ^| findstr /v /i "node_modules" ^| findstr /v /i ".git"') do @echo %i >> lista.txt
+
+
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\lista.txt 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\sql 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\.env 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\gerarHash.js 
@@ -88,6 +91,7 @@ C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funci
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\src\components\ManagerOverrideDialog.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\src\components\ModalAberturaCaixa.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\src\components\ModalDesconto.js 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\src\components\ModalDetalhesCaixa.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\src\components\ModalDetalhesProduto.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\src\components\ModalEntradaEstoque.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\src\components\ModalMovimentacaoCaixa.js 

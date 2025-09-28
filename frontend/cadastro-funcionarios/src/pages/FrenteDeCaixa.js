@@ -24,7 +24,7 @@ import ModalDesconto from '../components/ModalDesconto';
 import ModalSelecionarVendedor from '../components/ModalSelecionarVendedor';
 
 function FrenteDeCaixa() {
-  const { isManager, caixaStatus, loadingCaixa } = useAuth();
+  const { isManager, user, caixaStatus, loadingCaixa } = useAuth();
   //ESTADO PARA CONTROLAR A QUANTIDADE DE ITENS
   const [itensPorPagina, setItensPorPagina] = useState(10);
   // Estados principais
@@ -114,16 +114,44 @@ function FrenteDeCaixa() {
   };
 
   const removerDoCarrinho = useCallback((produtoId) => {
-    if (isManager) {
+    // Gerente e Supervisor podem remover diretamente
+    if (user.cargo === 'gerente' || user.cargo === 'supervisor') {
       setCarrinho(carrinhoAtual => carrinhoAtual.filter(item => item.id !== produtoId));
-      toast.info('Item removido pelo gerente.');
+      toast.info(`Item removido por ${user.cargo}.`);
     } else {
+      // Caixa precisa de autorização
       setItemParaRemover(produtoId);
-      setOverrideAction('removerItem');
+      setOverrideAction({ type: 'removerItem' }); // Armazena a ação
       setOverrideDialogOpen(true);
-      setOverrideError('');
     }
-  }, [isManager]);
+  }, [user]); // Adiciona 'user' como dependência
+
+  const handleAuthorizeAction = useCallback(async (email, senha) => {
+    try {
+      // Chama a nova rota do backend
+      const response = await api.post('/autorizar-acao', { email, senha });
+      
+      const authorizedUser = response.data.funcionario;
+      toast.success(`${authorizedUser.cargo} ${authorizedUser.nome} autorizou a ação!`);
+
+      // Executa a ação que estava pendente
+      if (overrideAction?.type === 'removerItem') {
+        setCarrinho(carrinhoAtual => carrinhoAtual.filter(item => item.id !== itemParaRemover));
+      } else if (overrideAction?.type === 'aplicarDesconto') {
+        setModalDescontoOpen(true);
+      }
+      
+      // Limpa e fecha o modal
+      setOverrideDialogOpen(false);
+      setOverrideAction(null);
+      setItemParaRemover(null);
+
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Erro ao autorizar.';
+      // Lança o erro para ser pego pelo modal e exibido
+      throw new Error(errorMessage);
+    }
+  }, [itemParaRemover, overrideAction]);
 
   const handleQuantidadeChange = useCallback((produtoId, novaQuantidade) => {
     const qtd = parseInt(novaQuantidade, 10);
@@ -172,11 +200,12 @@ function FrenteDeCaixa() {
 
   // Nova função para controlar a abertura do modal de desconto
   const handleAbrirModalDesconto = () => {
-    if (isManager) {
+    // Gerente e Supervisor podem aplicar diretamente
+    if (user.cargo === 'gerente' || user.cargo === 'supervisor') {
       setModalDescontoOpen(true);
     } else {
-      setOverrideAction('aplicarDesconto'); // Define a ação
-      setOverrideError('');
+      // Caixa precisa de autorização
+      setOverrideAction({ type: 'aplicarDesconto' });
       setOverrideDialogOpen(true);
     }
   };
@@ -356,16 +385,15 @@ function FrenteDeCaixa() {
       <ModalSelecionarVendedor open={modalVendedorOpen} onClose={() => setModalVendedorOpen(false)} onVendedorSelecionado={setVendedorSelecionado} />
       <ModalMovimentacaoCaixa open={modalMovimentacaoOpen} onClose={() => setModalMovimentacaoOpen(false)} tipo={tipoMovimentacao} />
       <ManagerOverrideDialog
-        open={overrideDialogOpen}
-        onClose={() => setOverrideDialogOpen(false)}
-        onConfirm={handleManagerAuthorize}
-        error={overrideError}
-        description={
-          overrideAction === 'removerItem'
-            ? 'Para remover este item, por favor, insira as credenciais de um gerente.'
-            : 'Para aplicar um desconto, por favor, insira as credenciais de um gerente.'
-        }
-      />
+          open={overrideDialogOpen}
+          onClose={() => setOverrideDialogOpen(false)}
+          onConfirm={handleAuthorizeAction} // Usa a nova função
+          description={ // Descrição dinâmica
+            overrideAction?.type === 'removerItem'
+              ? 'Para remover este item, insira as credenciais de um Supervisor ou Gerente.'
+              : 'Para aplicar um desconto, insira as credenciais de um Supervisor ou Gerente.'
+          }
+        />
       <Dialog open={!!vendaFinalizada} onClose={() => setVendaFinalizada(null)}>
         <DialogTitle>Venda Finalizada com Sucesso!</DialogTitle>
         <DialogContent>

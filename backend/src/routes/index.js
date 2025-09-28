@@ -28,7 +28,12 @@ routes.post('/login', SessionController.store);
 // ===================================================================
 // APLICA O MIDDLEWARE DE AUTENTICAÇÃO
 routes.use(authMiddleware);
+
+
 // ===================================================================
+// ADIÇÃO: Nova rota de autorização para Supervisor/Gerente
+routes.post('/autorizar-acao', FuncionarioController.autorizarAcao);
+
 
 // Mova a rota de listagem de funcionários para ANTES do middleware de gerente
 routes.get('/funcionarios', FuncionarioController.index);

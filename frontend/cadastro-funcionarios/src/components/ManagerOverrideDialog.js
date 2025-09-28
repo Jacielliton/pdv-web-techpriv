@@ -1,63 +1,76 @@
-// frontend/src/components/ManagerOverrideDialog.js
+// frontend/src/components/ManagerOverrideDialog.js (VERSÃO ATUALIZADA)
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Typography } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Typography, CircularProgress } from '@mui/material';
 
-// ========== INÍCIO DA ALTERAÇÃO ==========
-// Adicionamos a prop 'description' para customizar a mensagem
-const ManagerOverrideDialog = ({ open, onClose, onConfirm, error, description }) => {
-// ========== FIM DA ALTERAÇÃO ==========
+// O onConfirm agora espera o objeto do funcionário autorizado
+const ManagerOverrideDialog = ({ open, onClose, onConfirm, description }) => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [senha, setSenha] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleConfirm = () => {
-    onConfirm(email, password);
+  const handleConfirm = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      // Chama a função onConfirm (que fará a chamada da API) e passa os dados
+      await onConfirm(email, senha);
+      // O fechamento do modal será controlado pelo componente pai (FrenteDeCaixa)
+    } catch (err) {
+      // Se onConfirm lançar um erro, ele será capturado aqui
+      setError(err.message || 'Ocorreu um erro.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Efeito para limpar os campos quando o modal for fechado
   useEffect(() => {
     if (!open) {
       setEmail('');
-      setPassword('');
+      setSenha('');
+      setError('');
     }
   }, [open]);
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Autorização de Gerente Requerida</DialogTitle>
+      {/* ALTERAÇÃO: Título e descrição mais genéricos */}
+      <DialogTitle>Autorização Requerida</DialogTitle>
       <DialogContent>
-        {/* ========== INÍCIO DA ALTERAÇÃO ========== */}
-        {/* Usamos a prop 'description' ou um texto padrão */}
         <Typography variant="body2" gutterBottom>
-          {description || 'Esta ação requer credenciais de um gerente.'}
+          {description || 'Esta ação requer permissão de Supervisor ou Gerente.'}
         </Typography>
-        {/* ========== FIM DA ALTERAÇÃO ========== */}
         <TextField
           autoFocus
           margin="dense"
           id="email"
-          label="E-mail do Gerente"
+          label="E-mail do Supervisor/Gerente"
           type="email"
           fullWidth
           variant="standard"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={loading}
         />
         <TextField
           margin="dense"
-          id="password"
-          label="Senha do Gerente"
+          id="senha"
+          label="Senha"
           type="password"
           fullWidth
           variant="standard"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleConfirm()}
+          disabled={loading}
         />
-        {error && <Typography color="error" variant="caption">{error}</Typography>}
+        {error && <Typography color="error" variant="caption" sx={{ mt: 1 }}>{error}</Typography>}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancelar</Button>
-        <Button onClick={handleConfirm} variant="contained">Autorizar</Button>
+        <Button onClick={onClose} disabled={loading}>Cancelar</Button>
+        <Button onClick={handleConfirm} variant="contained" disabled={loading}>
+          {loading ? <CircularProgress size={24} /> : 'Autorizar'}
+        </Button>
       </DialogActions>
     </Dialog>
   );
