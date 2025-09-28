@@ -14,6 +14,8 @@ const FornecedorController = require('../controllers/FornecedorController');
 const EstoqueController = require('../controllers/EstoqueController');
 const ContasReceberController = require('../controllers/ContasReceberController');
 const CarrinhoController = require('../controllers/CarrinhoController');
+const GrupoController = require('../controllers/GrupoController');
+const CategoriaController = require('../controllers/CategoriaController');
 
 // Middlewares
 const authMiddleware = require('../middlewares/auth');
@@ -29,6 +31,14 @@ routes.post('/login', SessionController.store);
 // ===================================================================
 // APLICA O MIDDLEWARE DE AUTENTICAÇÃO
 routes.use(authMiddleware);
+
+// ===================================================================
+// ADIÇÃO: Novas rotas para gerenciamento de Grupos e Categorias
+// (Acessíveis por todos os usuários logados para preencher selects, por exemplo)
+// ===================================================================
+routes.get('/grupos', GrupoController.index);
+routes.get('/categorias', CategoriaController.index);
+// ===================================================================
 
 
 // ===================================================================
@@ -79,6 +89,13 @@ routes.use(authManagerMiddleware);
 // ===================================================================
 
 // --- Rotas exclusivas para GERENTES ---
+
+
+// ADIÇÃO: Rotas para criar novos Grupos e Categorias (apenas gerentes)
+routes.post('/grupos', GrupoController.store);
+routes.post('/categorias', CategoriaController.store);
+
+
 routes.post('/funcionarios', FuncionarioController.store);
 routes.put('/funcionarios/:id', FuncionarioController.update);
 routes.delete('/funcionarios/:id', FuncionarioController.delete);

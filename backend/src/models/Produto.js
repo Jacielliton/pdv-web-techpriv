@@ -43,6 +43,27 @@ Produto.init({
     type: DataTypes.STRING,
     unique: true,
   },
+grupo_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true, // Ou false se for obrigatório
+    references: {
+      model: 'grupos',
+      key: 'id',
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL', // Se um grupo for deletado, o produto fica sem grupo
+  },
+  categoria_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true, // Ou false se for obrigatório
+    references: {
+      model: 'categorias',
+      key: 'id',
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'SET NULL', // Se uma categoria for deletada, o produto fica sem categoria
+  },
+
 }, {
   sequelize,
   modelName: 'Produto',

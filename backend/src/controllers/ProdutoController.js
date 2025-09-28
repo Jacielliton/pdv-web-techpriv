@@ -4,6 +4,8 @@ const { Op } = require('sequelize');
 const Produto = require('../models/Produto');
 const EntradaEstoque = require('../models/EntradaEstoque');
 const Fornecedor = require('../models/Fornecedor');
+const Grupo = require('../models/Grupo');       
+const Categoria = require('../models/Categoria'); 
 
 class ProdutoController {
   // --- MÉTODO INDEX ATUALIZADO ---
@@ -22,8 +24,12 @@ class ProdutoController {
     try {
       // 4. APLIQUE A CLÁUSULA 'WHERE' E A PAGINAÇÃO
       const { count, rows: produtos } = await Produto.findAndCountAll({
-        where: whereClause, // Aplica o filtro de nome, se houver
-        order: [['nome', 'ASC']],
+        where: whereClause,
+      include: [ // ADICIONAR ESTE BLOCO 'INCLUDE'
+        { model: Grupo, attributes: ['nome'] },
+        { model: Categoria, attributes: ['nome'] },
+      ],
+      order: [['nome', 'ASC']],
         limit,
         offset,
         distinct: true
@@ -45,6 +51,8 @@ class ProdutoController {
       quantidade_estoque: Yup.number().integer().min(0).required(),
       descricao: Yup.string(),
       codigo_barras: Yup.string(),
+      grupo_id: Yup.number().integer().nullable(),
+      categoria_id: Yup.number().integer().nullable(),
     });
 
     try {

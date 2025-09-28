@@ -1,4 +1,4 @@
-// backend/src/models/associations.js (VERSÃO FINAL E CORRIGIDA)
+// backend/src/models/associations.js (VERSÃO CORRIGIDA COM IMPORTS)
 const Funcionario = require('./Funcionario');
 const Caixa = require('./Caixa');
 const Venda = require('./Venda');
@@ -8,13 +8,16 @@ const Cliente = require('./Cliente');
 const MovimentacaoCaixa = require('./MovimentacaoCaixa');
 const Fornecedor = require('./Fornecedor');
 const EntradaEstoque = require('./EntradaEstoque');
-
-// ===================================================================
-// 1. IMPORTE OS NOVOS MODELS AQUI
-// ===================================================================
 const ContaReceber = require('./ContaReceber');
 const PagamentoConta = require('./PagamentoConta');
 const CarrinhoSalvo = require('./CarrinhoSalvo');
+
+// ===================================================================
+// CORREÇÃO: ADICIONE OS IMPORTS PARA OS NOVOS MODELS AQUI
+// ===================================================================
+const Grupo = require('./Grupo');
+const Categoria = require('./Categoria');
+// ===================================================================
 
 function applyAssociations() {
   // Relações de Funcionário
@@ -33,12 +36,12 @@ function applyAssociations() {
   Venda.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
   Venda.belongsTo(Funcionario, { 
     foreignKey: 'vendedor_id', 
-    as: 'Vendedor' // Apelido para diferenciar do operador
+    as: 'Vendedor'
   });
   Venda.belongsTo(Caixa, { foreignKey: 'caixa_id' });
   Venda.belongsTo(Cliente, { foreignKey: 'cliente_id' });
   Venda.hasMany(VendaItem, { foreignKey: 'venda_id' });
-  Venda.hasOne(ContaReceber, { foreignKey: 'venda_id' }); // Relação Venda -> Conta
+  Venda.hasOne(ContaReceber, { foreignKey: 'venda_id' });
 
   // Relação de Cliente
   Cliente.hasMany(Venda, { foreignKey: 'cliente_id' });
@@ -54,6 +57,13 @@ function applyAssociations() {
   // Relação de Produto
   Produto.hasMany(VendaItem, { foreignKey: 'produto_id' });
   Produto.hasMany(EntradaEstoque, { foreignKey: 'produto_id' });
+  // Novas associações de Produto
+  Produto.belongsTo(Grupo, { foreignKey: 'grupo_id' });
+  Produto.belongsTo(Categoria, { foreignKey: 'categoria_id' });
+
+  // Novas associações para Grupo e Categoria
+  Grupo.hasMany(Produto, { foreignKey: 'grupo_id' });
+  Categoria.hasMany(Produto, { foreignKey: 'categoria_id' });
 
   // Relação de EntradaEstoque
   EntradaEstoque.belongsTo(Produto, { foreignKey: 'produto_id' });
@@ -64,9 +74,7 @@ function applyAssociations() {
   MovimentacaoCaixa.belongsTo(Caixa, { foreignKey: 'caixa_id' });
   MovimentacaoCaixa.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
 
-  // ===================================================================
-  // 2. ASSOCIAÇÕES DE CONTAS A RECEBER E PAGAMENTOS
-  // ===================================================================
+  // Associações de Contas a Receber e Pagamentos
   ContaReceber.belongsTo(Cliente, { foreignKey: 'cliente_id' });
   ContaReceber.belongsTo(Venda, { foreignKey: 'venda_id' });
   ContaReceber.hasMany(PagamentoConta, { foreignKey: 'conta_id' });
@@ -75,11 +83,10 @@ function applyAssociations() {
   PagamentoConta.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
   PagamentoConta.belongsTo(Caixa, { foreignKey: 'caixa_id' });
 
-  // ADIÇÃO: O carrinho salvo pertence a um funcionário, um cliente e um vendedor
+  // Associações do Carrinho Salvo
   CarrinhoSalvo.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
   CarrinhoSalvo.belongsTo(Cliente, { foreignKey: 'cliente_id' });
   CarrinhoSalvo.belongsTo(Funcionario, { as: 'Vendedor', foreignKey: 'vendedor_id' });
-
 }
 
 module.exports = applyAssociations;

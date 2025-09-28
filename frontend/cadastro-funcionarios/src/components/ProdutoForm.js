@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { TextField, Button, Box, Typography, Grid, Paper, Stack, CircularProgress } from '@mui/material';
 import { toast } from 'react-toastify';
+import { InputLabel, Select, MenuItem, FormControl } from '@mui/material';
 
 const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
   const [formData, setFormData] = useState({
@@ -12,9 +13,32 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
     quantidade_estoque: '',
     codigo_barras: '',
     estoque_minimo: '',
+    grupo_id: '',       
+    categoria_id: '',
   });  
+  // ADIÇÃO: Estados para armazenar as listas de grupos e categorias
+  const [grupos, setGrupos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // ADIÇÃO: Efeito para buscar grupos e categorias quando o componente montar
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [gruposRes, categoriasRes] = await Promise.all([
+          api.get('/grupos'),
+          api.get('/categorias'),
+        ]);
+        setGrupos(gruposRes.data);
+        setCategorias(categoriasRes.data);
+      } catch (error) {
+        toast.error('Erro ao carregar grupos e categorias.');
+      }
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (produtoParaEditar) {
@@ -24,12 +48,14 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
         preco: produtoParaEditar.preco,
         quantidade_estoque: produtoParaEditar.quantidade_estoque,
         codigo_barras: produtoParaEditar.codigo_barras || '',
-        estoque_minimo: produtoParaEditar.estoque_minimo || 10, // POPULE O CAMPO NA EDIÇÃO
+        estoque_minimo: produtoParaEditar.estoque_minimo || 10, 
+        grupo_id: produtoParaEditar.grupo_id || '',         
+        categoria_id: produtoParaEditar.categoria_id || '',   
       });
       setIsEditing(true);
       
     } else {
-      setFormData({ nome: '', descricao: '', preco: '', quantidade_estoque: '', codigo_barras: '', estoque_minimo: '' });
+      setFormData({ nome: '', descricao: '', preco: '', quantidade_estoque: '', codigo_barras: '', estoque_minimo: '', grupo_id: '', categoria_id: '' });
       setIsEditing(false);
     }
   }, [produtoParaEditar]);
@@ -113,6 +139,45 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
               required
               helperText="Alerta será gerado quando o estoque atingir este valor."
             />
+          </Grid>
+
+          {/* ADIÇÃO: Campos de Select para Grupo e Categoria */}
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Grupo</InputLabel>
+              <Select
+                name="grupo_id"
+                value={formData.grupo_id}
+                label="Grupo"
+                onChange={handleChange}
+              >
+                <MenuItem value=""><em>Nenhum</em></MenuItem>
+                {grupos.map((grupo) => (
+                  <MenuItem key={grupo.id} value={grupo.id}>
+                    {grupo.nome}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Categoria</InputLabel>
+              <Select
+                name="categoria_id"
+                value={formData.categoria_id}
+                label="Categoria"
+                onChange={handleChange}
+              >
+                <MenuItem value=""><em>Nenhuma</em></MenuItem>
+                {categorias.map((cat) => (
+                  <MenuItem key={cat.id} value={cat.id}>
+                    {cat.nome}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
 
           <Grid xs={12} sm={6}>
