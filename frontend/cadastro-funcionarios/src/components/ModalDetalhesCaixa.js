@@ -1,4 +1,4 @@
-// frontend/cadastro-funcionarios/src/components/ModalDetalhesCaixa.js (VERSÃO CORRIGIDA E REESTRUTURADA)
+// frontend/cadastro-funcionarios/src/components/ModalDetalhesCaixa.js (VERSÃO COM CÁLCULO CORRIGIDO)
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import {
@@ -84,11 +84,22 @@ function ModalDetalhesCaixa({ open, onClose, caixaId }) {
 
     const totalPagamentosDeContas = Object.values(detalhes.pagamentosDeContasPorMetodo || {}).reduce((sum, val) => sum + val, 0);
 
+    const totalDinheiroEntrada = (detalhes.vendasPorMetodo?.Dinheiro || 0) + (detalhes.pagamentosDeContasPorMetodo?.Dinheiro || 0);
+    
+    // ===================================================================
+    // CORREÇÃO: Usando parseFloat() para garantir que a conta seja matemática
+    // ===================================================================
+    const valorEsperado = parseFloat(detalhes.caixa.valor_inicial || 0)
+                        + parseFloat(detalhes.movimentacoes?.SUPRIMENTO || 0)
+                        + totalDinheiroEntrada
+                        - parseFloat(detalhes.movimentacoes?.SANGRIA || 0);
+
+    // CORREÇÃO: Recalculando a diferença para garantir consistência
+    const diferencaCalculada = parseFloat(detalhes.caixa.valor_final_informado || 0) - valorEsperado;
+    // ===================================================================
+
     return (
       <Box>
-        {/* =================================================================== */}
-        {/* CORREÇÃO: Usando List e DetailRow diretamente para dados mistos     */}
-        {/* =================================================================== */}
         <Typography variant="overline" display="block" color="text.secondary">
           Informações Gerais
         </Typography>
@@ -106,16 +117,19 @@ function ModalDetalhesCaixa({ open, onClose, caixaId }) {
         <List dense>
           <DetailRow label="Valor Inicial (Troco)" value={formatCurrency(detalhes.caixa.valor_inicial)} />
           <DetailRow label="(+) Suprimentos" value={formatCurrency(detalhes.movimentacoes?.SUPRIMENTO)} />
+          <DetailRow label="(+) Dinheiro (Vendas + Contas)" value={formatCurrency(totalDinheiroEntrada)} />
           <DetailRow label="(-) Sangrias" value={formatCurrency(detalhes.movimentacoes?.SANGRIA)} />
+          
+          <Divider sx={{ my: 1, mx: -2 }} />
+          
+          <DetailRow label="(=) Valor Esperado no Caixa" value={formatCurrency(valorEsperado)} isTotal />
           <DetailRow label="(?) Valor Informado" value={formatCurrency(detalhes.caixa.valor_final_informado)} />
-          <DetailRow label="Diferença" value={formatCurrency(detalhes.caixa.diferenca)} isTotal />
+          {/* CORREÇÃO: Usando a diferença recalculada */}
+          <DetailRow label="Diferença" value={formatCurrency(diferencaCalculada)} isTotal />
         </List>
         
         <Divider sx={{ my: 2 }} />
 
-        {/* =================================================================== */}
-        {/* AQUI O USO DO ValueSection ESTÁ CORRETO (dados numéricos)           */}
-        {/* =================================================================== */}
         <ValueSection title="Vendas Realizadas" data={detalhes.vendasPorMetodo} />
         {detalhes.vendasPorMetodo && Object.keys(detalhes.vendasPorMetodo).length > 0 && (
           <List dense><DetailRow label="Total de Vendas" value={formatCurrency(detalhes.caixa.valor_final_calculado)} isTotal /></List>
