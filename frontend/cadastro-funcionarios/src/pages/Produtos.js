@@ -5,13 +5,11 @@ import ProdutoForm from '../components/ProdutoForm';
 import ListaProdutos from '../components/ListaProdutos';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from 'react-toastify';
-// 1. ADICIONE OS COMPONENTES QUE FALTAVAM AQUI
-import { 
-  Container, Typography, Box, Pagination, Paper, Divider, 
-  Grid, TextField, Button 
-} from '@mui/material';
+import { Container, Typography, Box, Pagination, Paper, Grid, TextField, Button, Stack } from '@mui/material';
 import ModalEntradaEstoque from '../components/ModalEntradaEstoque';
 import ModalDetalhesProduto from '../components/ModalDetalhesProduto';
+import GerenciadorEntidadeModal from '../components/GerenciadorEntidadeModal';
+
 
 function Produtos() {
   const [produtos, setProdutos] = useState([]);
@@ -27,6 +25,9 @@ function Produtos() {
   const [produtoDetalhes, setProdutoDetalhes] = useState(null);
   const [filtros, setFiltros] = useState({ nome: '' });
   const [filtrosAtivos, setFiltrosAtivos] = useState({});
+  const [gerenciadorModal, setGerenciadorModal] = useState({ open: false, tipo: '' });
+  const [formKey, setFormKey] = useState(0); // Chave para forçar o refresh do ProdutoForm
+
 
   const fetchProdutos = useCallback(async () => {
     setLoading(true);
@@ -54,6 +55,10 @@ function Produtos() {
       fetchProdutos(); 
     }
     setProdutoParaEditar(null);
+  };
+
+  const handleModalSuccess = () => {
+    setFormKey(prevKey => prevKey + 1);
   };
 
   const handlePageChange = (event, value) => {
@@ -145,6 +150,18 @@ function Produtos() {
           <Grid item xs={12} sm={3}>
             <Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Buscar</Button>
           </Grid>
+          
+          <Grid item xs={12} sm={2}>
+              <Button variant="outlined" onClick={() => setGerenciadorModal({ open: true, tipo: 'Grupo' })} fullWidth>
+                Gerenciar Grupos
+              </Button>
+            </Grid>
+          <Grid item xs={12} sm={2}>
+              <Button variant="outlined" onClick={() => setGerenciadorModal({ open: true, tipo: 'Categoria' })} fullWidth>
+                Gerenciar Categorias
+              </Button>
+            </Grid>
+
         </Grid>
       </Paper>
 
@@ -188,6 +205,13 @@ function Produtos() {
         open={modalDetalhesOpen}
         onClose={() => setModalDetalhesOpen(false)}
         produto={produtoDetalhes}
+      />
+
+      <GerenciadorEntidadeModal
+        open={gerenciadorModal.open}
+        onClose={() => setGerenciadorModal({ open: false, tipo: '' })}
+        tipo={gerenciadorModal.tipo}
+        onSuccess={handleModalSuccess}
       />
     </Container>
   );

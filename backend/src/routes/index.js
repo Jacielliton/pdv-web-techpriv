@@ -94,6 +94,8 @@ routes.use(authManagerMiddleware);
 // ADIÇÃO: Rotas para criar novos Grupos e Categorias (apenas gerentes)
 routes.post('/grupos', GrupoController.store);
 routes.post('/categorias', CategoriaController.store);
+routes.delete('/grupos/:id', GrupoController.destroy);
+routes.delete('/categorias/:id', CategoriaController.destroy);
 
 
 routes.post('/funcionarios', FuncionarioController.store);

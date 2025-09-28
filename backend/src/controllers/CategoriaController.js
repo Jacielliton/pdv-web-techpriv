@@ -18,7 +18,22 @@ class CategoriaController {
       return res.status(500).json({ error: 'Erro ao criar categoria.' });
     }
   }
-  // Adicionar métodos update e delete se necessário...
+  async destroy(req, res) {
+    try {
+      const { id } = req.params;
+      const categoria = await Categoria.findByPk(id);
+      if (!categoria) {
+        return res.status(404).json({ error: 'Categoria não encontrada.' });
+      }
+      await categoria.destroy();
+      return res.status(204).send();
+    } catch (error) {
+      if (error.name === 'SequelizeForeignKeyConstraintError') {
+        return res.status(400).json({ error: 'Não é possível excluir. Existem produtos associados a esta categoria.' });
+      }
+      return res.status(500).json({ error: 'Erro ao deletar categoria.' });
+    }
+  }
 }
 
 module.exports = new CategoriaController();
