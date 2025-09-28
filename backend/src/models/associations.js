@@ -14,10 +14,12 @@ const EntradaEstoque = require('./EntradaEstoque');
 // ===================================================================
 const ContaReceber = require('./ContaReceber');
 const PagamentoConta = require('./PagamentoConta');
+const CarrinhoSalvo = require('./CarrinhoSalvo');
 
 function applyAssociations() {
   // Relações de Funcionário
   Funcionario.hasMany(Caixa, { foreignKey: 'funcionario_id' });
+  Funcionario.hasOne(CarrinhoSalvo, { foreignKey: 'funcionario_id', onDelete: 'CASCADE' });
   Funcionario.hasMany(Venda, { foreignKey: 'funcionario_id' });
   Funcionario.hasMany(MovimentacaoCaixa, { foreignKey: 'funcionario_id' });
   Funcionario.hasMany(EntradaEstoque, { foreignKey: 'funcionario_id' });
@@ -72,6 +74,12 @@ function applyAssociations() {
   PagamentoConta.belongsTo(ContaReceber, { foreignKey: 'conta_id' });
   PagamentoConta.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
   PagamentoConta.belongsTo(Caixa, { foreignKey: 'caixa_id' });
+
+  // ADIÇÃO: O carrinho salvo pertence a um funcionário, um cliente e um vendedor
+  CarrinhoSalvo.belongsTo(Funcionario, { foreignKey: 'funcionario_id' });
+  CarrinhoSalvo.belongsTo(Cliente, { foreignKey: 'cliente_id' });
+  CarrinhoSalvo.belongsTo(Funcionario, { as: 'Vendedor', foreignKey: 'vendedor_id' });
+
 }
 
 module.exports = applyAssociations;

@@ -23,6 +23,20 @@ import ModalSelecionarCliente from '../components/ModalSelecionarCliente';
 import ModalDesconto from '../components/ModalDesconto';
 import ModalSelecionarVendedor from '../components/ModalSelecionarVendedor';
 
+// ADIÇÃO: Hook customizado para "atrasar" a execução de uma função (debounce)
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 function FrenteDeCaixa() {
   const { isManager, user, caixaStatus, loadingCaixa } = useAuth();
   //ESTADO PARA CONTROLAR A QUANTIDADE DE ITENS
@@ -33,6 +47,8 @@ function FrenteDeCaixa() {
   const [clienteSelecionado, setClienteSelecionado] = useState(null);
   const [desconto, setDesconto] = useState(0);  
   const [vendedorSelecionado, setVendedorSelecionado] = useState(null);
+  const [isCarrinhoLoading, setIsCarrinhoLoading] = useState(true); // Estado de loading para o carrinho
+
   
    
   // Estados de UI e Modais
@@ -54,6 +70,64 @@ function FrenteDeCaixa() {
   const reciboRef = useRef(null);
   const buscaInputRef = useRef(null); // Para o atalho F4
   const valorPagoInputRef = useRef(null); // Para o atalho F8
+
+  // ===================================================================
+  // LÓGICA DE PERSISTÊNCIA DO CARRINHO
+  // ===================================================================
+
+  // 1. Agrupa o estado do carrinho em um único objeto para 'debouncing'
+  const estadoDoCarrinho = useMemo(() => ({
+    conteudo: carrinho,
+    cliente_id: clienteSelecionado?.id || null,
+    vendedor_id: vendedorSelecionado?.id || null,
+    desconto: desconto,
+  }), [carrinho, clienteSelecionado, vendedorSelecionado, desconto]);
+
+  const estadoDebounced = useDebounce(estadoDoCarrinho, 1500);
+
+  // Efeito que CARREGA o carrinho salvo ao iniciar (permanece o mesmo)
+  useEffect(() => {
+    const carregarCarrinho = async () => {
+      try {
+        const response = await api.get('/carrinho');
+        const carrinhoSalvo = response.data;
+        if (carrinhoSalvo) {
+          setCarrinho(carrinhoSalvo.conteudo || []);
+          setClienteSelecionado(carrinhoSalvo.Cliente || null);
+          setVendedorSelecionado(carrinhoSalvo.Vendedor || null);
+          setDesconto(parseFloat(carrinhoSalvo.desconto) || 0);
+        }
+      } catch (error) {
+        toast.error('Não foi possível carregar o carrinho salvo.');
+      } finally {
+        setIsCarrinhoLoading(false);
+      }
+    };
+    carregarCarrinho();
+  }, []);
+
+  // Efeito que SALVA o carrinho sempre que o 'estadoDebounced' mudar
+  useEffect(() => {
+    // A guarda 'isCarrinhoLoading' continua importante para a primeira renderização
+    if (isCarrinhoLoading) {
+      return;
+    }
+    
+    const salvarCarrinho = async () => {
+      try {
+        await api.put('/carrinho', estadoDebounced);
+        console.log('Carrinho salvo com sucesso!');
+      } catch (error) {
+        toast.error('Erro ao salvar o carrinho na nuvem.');
+      }
+    };
+
+    // Apenas salva se não estiver carregando
+    salvarCarrinho();
+
+  }, [estadoDebounced]);
+  
+  // ===================================================================
 
   // A LÓGICA DE FILTRAGEM AGORA VIVE AQUI, NO COMPONENTE PAI
   const produtosFiltrados = useMemo(() => {
@@ -306,7 +380,15 @@ function FrenteDeCaixa() {
   };
  
   // Renderização condicional de Loading e Caixa Fechado
-  if (loadingCaixa) { return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><CircularProgress /></Box>; }
+  if (loadingCaixa || isCarrinhoLoading) { 
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Carregando dados...</Typography>
+      </Box>
+    ); 
+  }
+
   if (caixaStatus === 'FECHADO') { return <ModalAberturaCaixa open={true} />; }
 
   return (

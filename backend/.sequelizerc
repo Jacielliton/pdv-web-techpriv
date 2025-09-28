@@ -1,0 +1,10 @@
+// backend/.sequelizerc (VERSÃO ATUALIZADA)
+const path = require('path');
+
+module.exports = {
+  // A única alteração é aqui: apontamos para o novo arquivo 'database.cli.js'
+  'config': path.resolve('src', 'config', 'database.cli.js'),
+  'models-path': path.resolve('src', 'models'),
+  'seeders-path': path.resolve('src', 'database', 'seeders'),
+  'migrations-path': path.resolve('migrations')
+};

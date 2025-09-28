@@ -1,9 +1,5 @@
-for /f "delims=" %i in ('dir "C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv" /b /s ^| findstr /v /i "node_modules" ^| findstr /v /i ".git"') do @echo %i >> lista.txt
-
-
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend 
-C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\lista.txt 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\sql 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\.env 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\gerarHash.js 
@@ -33,6 +29,7 @@ C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\controllers
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\controllers\VendaController.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\middlewares\auth.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\middlewares\authManager.js 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\middlewares\authSupervisor.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\models\associations.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\models\Caixa.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\src\models\Cliente.js 

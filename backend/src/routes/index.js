@@ -13,6 +13,7 @@ const ClienteController = require('../controllers/ClienteController');
 const FornecedorController = require('../controllers/FornecedorController');
 const EstoqueController = require('../controllers/EstoqueController');
 const ContasReceberController = require('../controllers/ContasReceberController');
+const CarrinhoController = require('../controllers/CarrinhoController');
 
 // Middlewares
 const authMiddleware = require('../middlewares/auth');
@@ -33,6 +34,11 @@ routes.use(authMiddleware);
 // ===================================================================
 // ADIÇÃO: Nova rota de autorização para Supervisor/Gerente
 routes.post('/autorizar-acao', FuncionarioController.autorizarAcao);
+
+// ===================================================================
+// ADIÇÃO: Novas rotas para o carrinho persistente
+routes.get('/carrinho', CarrinhoController.show);
+routes.put('/carrinho', CarrinhoController.update);
 
 
 // Mova a rota de listagem de funcionários para ANTES do middleware de gerente
