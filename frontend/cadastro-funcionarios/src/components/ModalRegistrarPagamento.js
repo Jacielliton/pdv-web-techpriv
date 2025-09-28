@@ -1,13 +1,17 @@
-// frontend/src/components/ModalRegistrarPagamento.js (VERSÃO CORRIGIDA)
-import React from 'react'; // 1. CORREÇÃO DA SINTAXE DO IMPORT
+// frontend/src/components/ModalRegistrarPagamento.js (VERSÃO AJUSTADA)
+import React from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { toast } from 'react-toastify';
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Select, MenuItem, FormControl, InputLabel, FormHelperText, Typography } from '@mui/material';
-import api from '../services/api'; // 2. IMPORT MOVIDO PARA O TOPO
+import api from '../services/api';
+
+// Função auxiliar para arredondar números com precisão
+const round = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
 
 const ModalRegistrarPagamento = ({ open, onClose, conta, onSucesso }) => {
-  const saldoDevedor = conta ? (conta.valor_total - conta.valor_pago) : 0;
+  // CORREÇÃO: O saldo devedor agora é calculado e arredondado com precisão
+  const saldoDevedor = conta ? round(parseFloat(conta.valor_total) - parseFloat(conta.valor_pago)) : 0;
 
   const formik = useFormik({
     initialValues: {
@@ -18,14 +22,20 @@ const ModalRegistrarPagamento = ({ open, onClose, conta, onSucesso }) => {
       valor: Yup.number()
         .required('O valor é obrigatório.')
         .positive('O valor deve ser positivo.')
+        // A validação .max() agora usa o valor arredondado, evitando falsos erros
         .max(saldoDevedor, `O valor não pode ser maior que o saldo devedor de R$ ${saldoDevedor.toFixed(2)}.`),
       metodo_pagamento: Yup.string().required('O método de pagamento é obrigatório.'),
     }),
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        await api.post(`/contas-receber/${conta.id}/pagar`, values);
+        // Envia o valor como número para o backend
+        const dadosPagamento = {
+          ...values,
+          valor: parseFloat(values.valor)
+        };
+        await api.post(`/contas-receber/${conta.id}/pagar`, dadosPagamento);
         toast.success('Pagamento registrado com sucesso!');
-        onSucesso(); // Atualiza a lista de contas
+        onSucesso();
         onClose();
       } catch (error) {
         toast.error(error.response?.data?.error || 'Erro ao registrar pagamento.');
@@ -41,7 +51,8 @@ const ModalRegistrarPagamento = ({ open, onClose, conta, onSucesso }) => {
       <form onSubmit={formik.handleSubmit}>
         <DialogTitle>Registrar Pagamento</DialogTitle>
         <DialogContent>
-          <Typography>Venda #{conta?.Venda?.id} - Saldo Devedor: <strong>R$ {saldoDevedor.toFixed(2)}</strong></Typography>
+          {/* A exibição já usava toFixed(2), o que estava correto visualmente */}
+          <Typography>Venda #{conta?.id} - Saldo Devedor: <strong>R$ {saldoDevedor.toFixed(2)}</strong></Typography>
           <TextField
             autoFocus
             fullWidth
@@ -54,6 +65,8 @@ const ModalRegistrarPagamento = ({ open, onClose, conta, onSucesso }) => {
             onChange={formik.handleChange}
             error={formik.touched.valor && Boolean(formik.errors.valor)}
             helperText={formik.touched.valor && formik.errors.valor}
+            // Adiciona step para facilitar a digitação de centavos
+            inputProps={{ step: "0.01" }}
           />
           <FormControl fullWidth margin="normal" error={formik.touched.metodo_pagamento && Boolean(formik.errors.metodo_pagamento)}>
             <InputLabel>Método de Pagamento</InputLabel>
