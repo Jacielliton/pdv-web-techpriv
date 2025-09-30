@@ -5,7 +5,7 @@ import ProdutoForm from '../components/ProdutoForm';
 import ListaProdutos from '../components/ListaProdutos';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from 'react-toastify';
-import { Container, Typography, Box, Pagination, Paper, Grid, TextField, Button, Stack } from '@mui/material';
+import { Container, Typography, Box, Pagination, Paper, Grid, TextField, Button } from '@mui/material';
 import ModalEntradaEstoque from '../components/ModalEntradaEstoque';
 import ModalDetalhesProduto from '../components/ModalDetalhesProduto';
 import GerenciadorEntidadeModal from '../components/GerenciadorEntidadeModal';
@@ -59,6 +59,10 @@ function Produtos() {
 
   const handleModalSuccess = () => {
     setFormKey(prevKey => prevKey + 1);
+  };
+
+  const handleAbrirGerenciador = (tipo) => {
+    setGerenciadorModal({ open: true, tipo });
   };
 
   const handlePageChange = (event, value) => {
@@ -128,12 +132,17 @@ function Produtos() {
       </Typography>
 
       <ProdutoForm
+        key={formKey}
         onSucesso={handleSuccess}
         produtoParaEditar={produtoParaEditar}
         limparEdicao={handleCancelEdit}
+        // ADIÇÃO: Passando a nova função como prop
+        onAbrirGerenciador={handleAbrirGerenciador}
       />
 
-      {/* Com os imports corrigidos, esta seção agora funcionará */}
+      {/* =================================================================== */}
+      {/* ALTERAÇÃO: Removidos os botões de "Gerenciar" desta seção         */}
+      {/* =================================================================== */}
       <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={9}>
@@ -150,18 +159,6 @@ function Produtos() {
           <Grid item xs={12} sm={3}>
             <Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Buscar</Button>
           </Grid>
-          
-          <Grid item xs={12} sm={2}>
-              <Button variant="outlined" onClick={() => setGerenciadorModal({ open: true, tipo: 'Grupo' })} fullWidth>
-                Gerenciar Grupos
-              </Button>
-            </Grid>
-          <Grid item xs={12} sm={2}>
-              <Button variant="outlined" onClick={() => setGerenciadorModal({ open: true, tipo: 'Categoria' })} fullWidth>
-                Gerenciar Categorias
-              </Button>
-            </Grid>
-
         </Grid>
       </Paper>
 

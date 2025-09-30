@@ -1,12 +1,14 @@
 // src/components/ProdutoForm.js (VERSÃO COM MUI)
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { TextField, Button, Box, Typography, Grid, Paper, Stack, CircularProgress } from '@mui/material';
+import { TextField, Button, Box, Typography, Grid, Paper, Stack, CircularProgress,
+         InputLabel, Select, MenuItem, FormControl, IconButton, Tooltip } from '@mui/material'; // IconButton e Tooltip importados
 import { toast } from 'react-toastify';
-import { InputLabel, Select, MenuItem, FormControl } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings'; // Ícone para gerenciamento
 
-const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
-  const [formData, setFormData] = useState({
+
+const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao, onAbrirGerenciador }) => {
+ const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
     preco: '',
@@ -19,7 +21,6 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
   // ADIÇÃO: Estados para armazenar as listas de grupos e categorias
   const [grupos, setGrupos] = useState([]);
   const [categorias, setCategorias] = useState([]);
-
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -61,7 +62,7 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
   }, [produtoParaEditar]);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true); // Ativa o loading
@@ -143,41 +144,37 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
 
           {/* ADIÇÃO: Campos de Select para Grupo e Categoria */}
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Grupo</InputLabel>
-              <Select
-                name="grupo_id"
-                value={formData.grupo_id}
-                label="Grupo"
-                onChange={handleChange}
-              >
-                <MenuItem value=""><em>Nenhum</em></MenuItem>
-                {grupos.map((grupo) => (
-                  <MenuItem key={grupo.id} value={grupo.id}>
-                    {grupo.nome}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <FormControl fullWidth>
+                <InputLabel>Grupo</InputLabel>
+                <Select name="grupo_id" value={formData.grupo_id} label="Grupo" onChange={handleChange}>
+                  <MenuItem value=""><em>Nenhum</em></MenuItem>
+                  {grupos.map((grupo) => ( <MenuItem key={grupo.id} value={grupo.id}>{grupo.nome}</MenuItem> ))}
+                </Select>
+              </FormControl>
+              <Tooltip title="Gerenciar Grupos">
+                <IconButton onClick={() => onAbrirGerenciador('Grupo')} color="primary">
+                  <SettingsIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth>
-              <InputLabel>Categoria</InputLabel>
-              <Select
-                name="categoria_id"
-                value={formData.categoria_id}
-                label="Categoria"
-                onChange={handleChange}
-              >
-                <MenuItem value=""><em>Nenhuma</em></MenuItem>
-                {categorias.map((cat) => (
-                  <MenuItem key={cat.id} value={cat.id}>
-                    {cat.nome}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <FormControl fullWidth>
+                <InputLabel>Categoria</InputLabel>
+                <Select name="categoria_id" value={formData.categoria_id} label="Categoria" onChange={handleChange}>
+                  <MenuItem value=""><em>Nenhuma</em></MenuItem>
+                  {categorias.map((cat) => ( <MenuItem key={cat.id} value={cat.id}>{cat.nome}</MenuItem> ))}
+                </Select>
+              </FormControl>
+              <Tooltip title="Gerenciar Categorias">
+                <IconButton onClick={() => onAbrirGerenciador('Categoria')} color="primary">
+                  <SettingsIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Grid>
 
           <Grid xs={12} sm={6}>
@@ -202,15 +199,10 @@ const ProdutoForm = ({ onSucesso, produtoParaEditar, limparEdicao }) => {
           </Grid>
         </Grid>
         <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
-          {/* 3. ATUALIZAR O BOTÃO */}
           <Button type="submit" variant="contained" disabled={isLoading}>
             {isLoading ? <CircularProgress size={24} color="inherit" /> : (isEditing ? 'Atualizar' : 'Cadastrar')}
           </Button>
-          {isEditing && (
-            <Button variant="outlined" onClick={limparFormulario} disabled={isLoading}>
-              Cancelar Edição
-            </Button>
-          )}
+          {isEditing && ( <Button variant="outlined" onClick={limparFormulario} disabled={isLoading}> Cancelar Edição </Button> )}
         </Stack>       
       </Box>
     </Paper>
