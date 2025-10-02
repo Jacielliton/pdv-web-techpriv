@@ -18,17 +18,26 @@ class CaixaController {
   }
 
   async abrirCaixa(req, res) {
-    const { valor_inicial } = req.body;
-    if (valor_inicial === undefined || isNaN(parseFloat(valor_inicial))) {
-      return res.status(400).json({ error: 'Valor inicial é obrigatório e deve ser um número.' });
-    }
-    try {
-      const caixaJaAberto = await Caixa.findOne({ where: { funcionario_id: req.userId, status: 'ABERTO' } });
-      if (caixaJaAberto) { return res.status(400).json({ error: 'Já existe um caixa aberto para este funcionário.' }); }
-      const novoCaixa = await Caixa.create({ valor_inicial: parseFloat(valor_inicial), funcionario_id: req.userId, status: 'ABERTO' });
-      return res.status(201).json(novoCaixa);
-    } catch (error) { return res.status(500).json({ error: 'Erro ao abrir o caixa.', details: error.message }); }
+  const { valor_inicial } = req.body;
+  if (valor_inicial === undefined || isNaN(parseFloat(valor_inicial))) {
+    return res.status(400).json({ error: 'Valor inicial é obrigatório e deve ser um número.' });
   }
+  try {
+    const caixaJaAberto = await Caixa.findOne({ where: { funcionario_id: req.userId, status: 'ABERTO' } });
+    if (caixaJaAberto) { return res.status(400).json({ error: 'Já existe um caixa aberto para este funcionário.' }); }
+    
+    const novoCaixa = await Caixa.create({ valor_inicial: parseFloat(valor_inicial), funcionario_id: req.userId, status: 'ABERTO' });
+    
+    return res.status(201).json(novoCaixa);
+  } catch (error) {
+    // ===================================================================
+    // ADICIONE ESTA LINHA PARA DEPURAR O ERRO
+    // ===================================================================
+    console.error('### ERRO DETALHADO AO ABRIR CAIXA:', error);
+    // ===================================================================
+    return res.status(500).json({ error: 'Erro ao abrir o caixa.', details: error.message });
+  }
+}
   
   async registrarMovimentacao(req, res) {
     const { tipo, valor, observacao } = req.body;

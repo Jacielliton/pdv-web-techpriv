@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
   async function signIn(credentials) {
     try {
       // O endpoint correto já está a ser usado
-      const response = await axios.post('http://localhost:3333/api/login', credentials);
+      const response = await api.post('/login', credentials);
       const { funcionario, token } = response.data;
       
       localStorage.setItem('@PDV:user', JSON.stringify(funcionario));

@@ -1,15 +1,18 @@
 // src/pages/Produtos.js (VERSÃO CORRIGIDA)
-import React, { useState, useEffect, useCallback } from 'react'; 
+import React, { useState, useEffect, useCallback, useMemo } from 'react'; 
 import api from '../services/api';
 import ProdutoForm from '../components/ProdutoForm';
 import ListaProdutos from '../components/ListaProdutos';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { toast } from 'react-toastify';
-import { Container, Typography, Box, Pagination, Paper, Grid, TextField, Button } from '@mui/material';
+// ADIÇÃO: InputAdornment para o ícone no campo de texto
+import { Container, Typography, Box, Pagination, Paper, Grid, TextField, Button, InputAdornment } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search'; // Ícone para os novos campos
 import ModalEntradaEstoque from '../components/ModalEntradaEstoque';
 import ModalDetalhesProduto from '../components/ModalDetalhesProduto';
 import GerenciadorEntidadeModal from '../components/GerenciadorEntidadeModal';
-
+// ADIÇÃO: Importa o modal de seleção que você enviou
+import SelecaoEntidadeModal from '../components/SelecaoEntidadeModal';
 
 function Produtos() {
   const [produtos, setProdutos] = useState([]);
@@ -23,11 +26,31 @@ function Produtos() {
   const [produtoSelecionado, setProdutoSelecionado] = useState(null);
   const [modalDetalhesOpen, setModalDetalhesOpen] = useState(false);
   const [produtoDetalhes, setProdutoDetalhes] = useState(null);
-  const [filtros, setFiltros] = useState({ nome: '' });
+  const [filtros, setFiltros] = useState({ nome: '', grupoId: '', categoriaId: '' });
   const [filtrosAtivos, setFiltrosAtivos] = useState({});
   const [gerenciadorModal, setGerenciadorModal] = useState({ open: false, tipo: '' });
-  const [formKey, setFormKey] = useState(0); // Chave para forçar o refresh do ProdutoForm
+  const [formKey, setFormKey] = useState(0);
+  const [grupos, setGrupos] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  // ADIÇÃO: Estado para controlar o novo modal de seleção de filtros
+  const [selecaoModal, setSelecaoModal] = useState({ open: false, tipo: '' });
 
+
+  useEffect(() => {
+    const fetchFiltroData = async () => {
+      try {
+        const [gruposRes, categoriasRes] = await Promise.all([
+          api.get('/grupos'),
+          api.get('/categorias')
+        ]);
+        setGrupos(gruposRes.data);
+        setCategorias(categoriasRes.data);
+      } catch (error) {
+        toast.error("Erro ao carregar dados para os filtros.");
+      }
+    };
+    fetchFiltroData();
+  }, []);
 
   const fetchProdutos = useCallback(async () => {
     setLoading(true);
@@ -42,9 +65,7 @@ function Produtos() {
     }
   }, [page, filtrosAtivos]);
 
-  useEffect(() => {
-    fetchProdutos();
-  }, [fetchProdutos]);
+  useEffect(() => { fetchProdutos(); }, [fetchProdutos]);
 
   const handleSuccess = () => {
     // Se estiver editando, permanece na mesma página. Se estiver cadastrando, vai para a primeira.
@@ -57,26 +78,16 @@ function Produtos() {
     setProdutoParaEditar(null);
   };
 
-  const handleModalSuccess = () => {
-    setFormKey(prevKey => prevKey + 1);
-  };
-
-  const handleAbrirGerenciador = (tipo) => {
-    setGerenciadorModal({ open: true, tipo });
-  };
-
-  const handlePageChange = (event, value) => {
-    setPage(value);
-  };
+  const handleModalSuccess = () => { setFormKey(prevKey => prevKey + 1); };
+  const handleAbrirGerenciador = (tipo) => { setGerenciadorModal({ open: true, tipo }); };
+  const handlePageChange = (event, value) => { setPage(value); };
 
   const handleEdit = (produto) => {
     setProdutoParaEditar(produto);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCancelEdit = () => {
-    setProdutoParaEditar(null);
-  };
+   const handleCancelEdit = () => { setProdutoParaEditar(null); };
 
   const handleDeleteRequest = (id) => {
     setProdutoParaDeletar(id);
@@ -119,10 +130,35 @@ function Produtos() {
   const handleFiltroChange = (e) => {
     setFiltros({ ...filtros, [e.target.name]: e.target.value });
   };
+
+  // ADIÇÃO: Handler para quando um item é selecionado no modal de filtro
+  const handleFiltroSelecionado = (item) => {
+    const { tipo } = selecaoModal;
+    if (tipo === 'Grupo') {
+      setFiltros(f => ({ ...f, grupoId: item.id }));
+    } else if (tipo === 'Categoria') {
+      setFiltros(f => ({ ...f, categoriaId: item.id }));
+    }
+  };
+
+  // ADIÇÃO: Funções para pegar o nome do item selecionado para exibir no campo
+  const nomeGrupoFiltro = useMemo(() => grupos.find(g => g.id === filtros.grupoId)?.nome || '', [grupos, filtros.grupoId]);
+  const nomeCategoriaFiltro = useMemo(() => categorias.find(c => c.id === filtros.categoriaId)?.nome || '', [categorias, filtros.categoriaId]);
+
   
   const handleAplicarFiltros = () => {
     setPage(1);
-    setFiltrosAtivos(filtros);
+    setFiltrosAtivos({
+      nome: filtros.nome,
+      grupo_id: filtros.grupoId,
+      categoria_id: filtros.categoriaId,
+    });
+  };
+
+  const handleLimparFiltros = () => {
+    setPage(1);
+    setFiltros({ nome: '', grupoId: '', categoriaId: '' });
+    setFiltrosAtivos({});
   };
 
   return (
@@ -136,28 +172,63 @@ function Produtos() {
         onSucesso={handleSuccess}
         produtoParaEditar={produtoParaEditar}
         limparEdicao={handleCancelEdit}
-        // ADIÇÃO: Passando a nova função como prop
-        onAbrirGerenciador={handleAbrirGerenciador}
+        onAbrirGerenciador={handleAbrirGerenciador} // << GARANTA QUE ESTA LINHA EXISTA
       />
 
       {/* =================================================================== */}
-      {/* ALTERAÇÃO: Removidos os botões de "Gerenciar" desta seção         */}
+      {/* ALTERAÇÃO: Barra de filtros agora usa o modelo de modal de seleção  */}
       {/* =================================================================== */}
       <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={9}>
+          <Grid item xs={12} sm>
             <TextField 
-                name="nome" 
-                label="Buscar produto por nome..." 
-                value={filtros.nome}
-                onChange={handleFiltroChange}
-                onKeyPress={(e) => e.key === 'Enter' && handleAplicarFiltros()}
-                fullWidth 
-                size="small" 
+              name="nome" 
+              label="Buscar por nome..." 
+              value={filtros.nome}
+              onChange={handleFiltroChange}
+              fullWidth 
+              size="small" 
             />
           </Grid>
           <Grid item xs={12} sm={3}>
-            <Button variant="contained" onClick={handleAplicarFiltros} fullWidth>Buscar</Button>
+            <TextField
+              label="Grupo"
+              value={nomeGrupoFiltro}
+              onClick={() => setSelecaoModal({ open: true, tipo: 'Grupo' })}
+              fullWidth
+              size="small"
+              InputProps={{
+                readOnly: true,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={3}>
+            <TextField
+              label="Categoria"
+              value={nomeCategoriaFiltro}
+              onClick={() => setSelecaoModal({ open: true, tipo: 'Categoria' })}
+              fullWidth
+              size="small"
+              InputProps={{
+                readOnly: true,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm="auto">
+            <Button variant="contained" onClick={handleAplicarFiltros}>Buscar</Button>
+          </Grid>
+          <Grid item xs={12} sm="auto">
+            <Button variant="outlined" onClick={handleLimparFiltros}>Limpar</Button>
           </Grid>
         </Grid>
       </Paper>
@@ -210,6 +281,15 @@ function Produtos() {
         tipo={gerenciadorModal.tipo}
         onSuccess={handleModalSuccess}
       />
+
+      <SelecaoEntidadeModal
+        open={selecaoModal.open}
+        onClose={() => setSelecaoModal({ open: false, tipo: '' })}
+        tipo={selecaoModal.tipo}
+        itens={selecaoModal.tipo === 'Grupo' ? grupos : categorias}
+        onSelecionar={handleFiltroSelecionado}
+      />
+      
     </Container>
   );
 }

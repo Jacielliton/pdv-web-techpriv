@@ -1,6 +1,7 @@
-// pdv-web-techpriv\frontend\cadastro-funcionarios\src\routes\index.js (VERSÃO CORRIGIDA)
+// pdv-web-techpriv\frontend\cadastro-funcionarios\src\routes\index.js (VERSÃO COM HASHROUTER)
 import React from 'react';
-import { BrowserRouter, Routes as Switch, Route, Navigate } from 'react-router-dom';
+// ---> CORREÇÃO APLICADA AQUI <---
+import { HashRouter, Routes as Switch, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 
 import Login from '../pages/Login';
@@ -27,25 +28,25 @@ const Routes = () => {
 
   if (!signed) {
     return (
-      <BrowserRouter>
+      // ---> CORREÇÃO APLICADA AQUI <---
+      <HashRouter>
         <Switch>
           <Route path="*" element={<Login />} />
         </Switch>
-      </BrowserRouter>
+      </HashRouter>
     );
   }
 
   return (
-    <BrowserRouter>
+    // ---> CORREÇÃO APLICADA AQUI <---
+    <HashRouter>
       <Switch>
         <Route element={<Layout />}>
-          {/* --- Rotas Exclusivas para Gerente --- */}
           {isManager && (
             <>
               <Route path="/" element={<Dashboard />} />
               <Route path="/funcionarios" element={<Funcionarios />} />
               <Route path="/produtos" element={<Produtos />} />
-              <Route path="/historico" element={<HistoricoVendas />} />
               <Route path="/historico-caixas" element={<HistoricoCaixas />} />
               <Route path="/historico-movimentacoes" element={<HistoricoMovimentacoes />} />
               <Route path="/relatorios" element={<Relatorios />} />              
@@ -53,17 +54,15 @@ const Routes = () => {
             </>
           )}
 
-          {/* --- Rotas Comuns para TODOS os funcionários logados --- */}
           <Route path="/venda" element={<FrenteDeCaixa />} />
           <Route path="/fechamento-caixa" element={<FechamentoCaixa />} />
           <Route path="/historico" element={<HistoricoVendas />} />
           <Route path="/clientes" element={<Clientes />} />
           
-          {/* Rota "catch-all" para redirecionar qualquer outra URL inválida */}
           <Route path="*" element={<Navigate to={isManager ? "/" : "/venda"} replace />} />
         </Route>
       </Switch>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
 

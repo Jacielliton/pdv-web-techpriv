@@ -1,19 +1,13 @@
-// backend/src/config/database.cli.js (NOVO ARQUIVO)
+// backend/src/config/database.cli.js (VERSÃO ATUALIZADA)
 require('dotenv').config();
+const path = require('path');
 
-// Este objeto simples é o que o Sequelize CLI espera
 const config = {
-  username: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  dialect: 'postgres'
+  dialect: 'sqlite',
+  storage: path.resolve(__dirname, '..', '..', 'database.sqlite'),
 };
 
-// O CLI procura por chaves de ambiente (development, production). 
-// Vamos exportar nossa configuração para os ambientes que usamos.
 module.exports = {
   development: config,
-  production: config 
+  production: config,
 };

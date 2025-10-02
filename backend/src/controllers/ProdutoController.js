@@ -1,4 +1,4 @@
-// pdv-web-techpriv\backend\src\controllers\ProdutoController.js
+// pdv-web-techpriv\backend\src\controllers\ProdutoController.js (VERSÃO ATUALIZADA)
 const Yup = require('yup');
 const { Op } = require('sequelize');
 const Produto = require('../models/Produto');
@@ -8,34 +8,41 @@ const Grupo = require('../models/Grupo');
 const Categoria = require('../models/Categoria'); 
 
 class ProdutoController {
-  // --- MÉTODO INDEX ATUALIZADO ---
   async index(req, res) {
-    // 2. RECEBA OS NOVOS PARÂMETROS DE FILTRO E PAGINAÇÃO
-    const { page = 1, limit = 10, nome } = req.query;
+    // ===================================================================
+    // ALTERAÇÃO: Recebendo os novos parâmetros de filtro
+    // ===================================================================
+    const { page = 1, limit = 10, nome, grupo_id, categoria_id } = req.query;
     const offset = limit * (parseInt(page, 10) - 1);
 
-    // 3. CRIE A CLÁUSULA 'WHERE' DINAMICAMENTE
     const whereClause = {};
     if (nome) {
-      // 'iLike' faz uma busca case-insensitive (não diferencia maiúsculas/minúsculas)
       whereClause.nome = { [Op.iLike]: `%${nome}%` };
+    }
+    // ===================================================================
+    // ALTERAÇÃO: Adicionando os novos filtros à cláusula WHERE
+    // ===================================================================
+    if (grupo_id) {
+      whereClause.grupo_id = grupo_id;
+    }
+    if (categoria_id) {
+      whereClause.categoria_id = categoria_id;
     }
 
     try {
-      // 4. APLIQUE A CLÁUSULA 'WHERE' E A PAGINAÇÃO
       const { count, rows: produtos } = await Produto.findAndCountAll({
-        where: whereClause,
-      include: [ // ADICIONAR ESTE BLOCO 'INCLUDE'
-        { model: Grupo, attributes: ['nome'] },
-        { model: Categoria, attributes: ['nome'] },
-      ],
-      order: [['nome', 'ASC']],
-        limit,
+        where: whereClause, // A cláusula WHERE agora pode conter os novos filtros
+        include: [
+          { model: Grupo, attributes: ['nome'] },
+          { model: Categoria, attributes: ['nome'] },
+        ],
+        order: [['nome', 'ASC']],
+        limit: parseInt(limit, 10), // Garantir que o limite seja um número
         offset,
         distinct: true
       });
 
-      const totalPages = Math.ceil(count / limit);
+      const totalPages = Math.ceil(count / parseInt(limit, 10)); // Garantir que o limite seja um número
       return res.json({ produtos, totalPages, currentPage: parseInt(page, 10) });
 
     } catch (error) {
@@ -43,7 +50,10 @@ class ProdutoController {
     }
   }
 
-  // Cadastrar um novo produto
+  // O restante do controller (store, update, delete, getDetalhes) permanece o mesmo.
+  // Cole o código completo abaixo para garantir.
+  
+  // <editor-fold desc="Código restante do controller (sem alterações)">
   async store(req, res) {
     const schema = Yup.object().shape({
       nome: Yup.string().required(),
@@ -71,7 +81,6 @@ class ProdutoController {
     }
   }
 
-  // Atualizar um produto
   async update(req, res) {
     try {
       const { id } = req.params;
@@ -88,7 +97,6 @@ class ProdutoController {
     }
   }
 
-  // Deletar um produto
   async delete(req, res) {
     try {
       const { id } = req.params;
@@ -112,7 +120,7 @@ class ProdutoController {
         include: [
           {
             model: EntradaEstoque,
-            as: 'EntradaEstoques', // Use o alias se definido na associação
+            as: 'EntradaEstoques',
             include: [{ model: Fornecedor, attributes: ['nome_fantasia'] }],
             order: [['data_entrada', 'DESC']],
           }
@@ -128,6 +136,7 @@ class ProdutoController {
       return res.status(500).json({ error: 'Erro ao buscar detalhes do produto.', details: error.message });
     }
   }
+  // </editor-fold>
 }
 
 module.exports = new ProdutoController();

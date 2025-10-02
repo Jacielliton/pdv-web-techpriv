@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3333/api',
+  baseURL: '/api',
 });
 
 // Este interceptor é um "plano B" caso o `useEffect` do AuthContext ainda não tenha rodado.
