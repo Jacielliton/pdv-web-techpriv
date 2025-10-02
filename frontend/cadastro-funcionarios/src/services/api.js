@@ -1,14 +1,19 @@
-//pdv-web-techpriv\frontend\cadastro-funcionarios\src\services\api.js
+// pdv-web-techpriv\frontend\cadastro-funcionarios\src\services\api.js (VERSÃO FINAL E AUTOMÁTICA)
 import axios from 'axios';
 
+// Esta variável especial (NODE_ENV) é definida automaticamente pelo React
+// 'development' quando você usa 'npm start'
+// 'production' quando você usa 'npm run build' (ou 'npm run electron:dist')
+const baseURL = process.env.NODE_ENV === 'development'
+  ? '/api' // Em desenvolvimento, usa o proxy para o Ngrok funcionar
+  : 'http://localhost:3333/api'; // Na versão final (.exe), aponta direto para o localhost
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: baseURL,
 });
 
-// Este interceptor é um "plano B" caso o `useEffect` do AuthContext ainda não tenha rodado.
-// Ele garante que CADA requisição verifique o token mais recente no storage.
+// Este interceptor continua o mesmo
 api.interceptors.request.use(config => {
-  // Use a MESMA chave que você definiu no seu AuthContext
   const token = localStorage.getItem('@PDV:token'); 
   
   if (token) {
