@@ -36,8 +36,8 @@ const startServer = async () => {
     await createAdminUser();
 
     // 3. Inicia o servidor, sem tentar alterar o banco de dados (sem sync)
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Servidor rodando na porta ${PORT} e acessível na rede`);
     });
 
   } catch (error) {

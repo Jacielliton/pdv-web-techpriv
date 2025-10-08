@@ -1,12 +1,22 @@
-// pdv-web-techpriv\frontend\cadastro-funcionarios\src\services\api.js (VERSÃO FINAL E AUTOMÁTICA)
+// pdv-web-techpriv\frontend\cadastro-funcionarios\src\services\api.js (VERSÃO FINAL PARA REDE LOCAL)
 import axios from 'axios';
 
-// Esta variável especial (NODE_ENV) é definida automaticamente pelo React
-// 'development' quando você usa 'npm start'
-// 'production' quando você usa 'npm run build' (ou 'npm run electron:dist')
-const baseURL = process.env.NODE_ENV === 'development'
-  ? '/api' // Em desenvolvimento, usa o proxy para o Ngrok funcionar
-  : 'http://localhost:3333/api'; // Na versão final (.exe), aponta direto para o localhost
+const isDevelopment = process.env.NODE_ENV === 'development';
+let baseURL;
+
+if (isDevelopment) {
+  // Se estamos em desenvolvimento e acessando de um IP na rede (não localhost)...
+  if (window.location.hostname !== 'localhost') {
+    // ...construímos a URL do backend usando o mesmo IP.
+    baseURL = `http://${window.location.hostname}:3333/api`;
+  } else {
+    // Se estamos em localhost, usamos o proxy (caminho relativo).
+    baseURL = '/api';
+  }
+} else {
+  // Na versão final compilada (.exe), o backend sempre estará em localhost.
+  baseURL = 'http://localhost:3333/api';
+}
 
 const api = axios.create({
   baseURL: baseURL,

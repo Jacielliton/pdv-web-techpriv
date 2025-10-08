@@ -1,0 +1,38 @@
+{
+  "name": "pdv-server",
+  "version": "1.0.0",
+  "description": "Servidor e Painel de Controle para o sistema PDV",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.pdvweb.server",
+    "productName": "PDV Server",
+    "files": [
+      "main.js",
+      "index.html",
+      "renderer.js"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend",
+        "to": "backend"
+      },
+      {
+        "from": "../frontend/cadastro-funcionarios/build",
+        "to": "frontend_build"
+      }
+    ]
+  }
+}

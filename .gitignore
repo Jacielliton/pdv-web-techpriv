@@ -2,6 +2,7 @@
 /node_modules
 /backend/node_modules
 /frontend/cadastro-funcionarios/node_modules
+/pdv-server-electron/node_modules
 
 # Arquivos de ambiente com informações sensíveis
 .env

@@ -2,6 +2,7 @@ C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\Dev-Tutorial de Execu‡Æo e Disponibiliza‡Æo do PDV.pdf 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\ngrok.exe 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\pdv-server-electron 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\sql 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\Tutorial de Uso do Aplicativo Compilado PDV Web.pdf 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\backend\.env 
@@ -143,3 +144,8 @@ C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funci
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\src\pages\Login\index.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\src\routes\index.js 
 C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\frontend\cadastro-funcionarios\src\services\api.js 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\pdv-server-electron\index.html 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\pdv-server-electron\main.js 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\pdv-server-electron\package-lock.json 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\pdv-server-electron\package.json 
+C:\Users\WELL\Documents\CODIGOS\PDV-WEB\pdv-web-techpriv\pdv-server-electron\renderer.js 
