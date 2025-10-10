@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Controle - PDV</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            font-size: 14px;
+            color: #4b4f56;
+        }
+        .container {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-width: 750px;
+            margin: auto;
+        }
+        h1, h2, h3 {
+            color: #1c1e21;
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 16px;
+            margin-top: 0;
+        }
+        .card {
+            padding: 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .status {
+            display: flex;
+            align-items: center;
+            font-size: 1.1em;
+        }
+        .status-dot {
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            transition: background-color 0.3s;
+        }
+        .online { background-color: #42b72a; }
+        .offline { background-color: #f02849; }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        .btn-secondary { background-color: #e4e6eb; color: #4b4f56; }
+        .btn-secondary:hover { background-color: #d8dbdf; }
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #1877f2;
+            padding: 16px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        input[type="text"] {
+            width: 250px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        pre {
+            background: #1c1e21;
+            color: #e4e6eb;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #444;
+        }
+        details {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        summary {
+            font-weight: bold;
+            padding: 12px;
+            cursor: pointer;
+            background-color: #f5f6f7;
+        }
+        .tutorial-content {
+            padding: 15px;
+            border-top: 1px solid #ddd;
+        }
+        .tutorial-content p, .tutorial-content li {
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Painel de Controle do PDV</h1>
+
+        <div class="card">
+            <h2>Status do Servidor Unificado</h2>
+            <div class="status">
+                <div id="server-status-dot" class="status-dot offline"></div>
+                <span id="server-status-text">Offline</span>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <div>
+                <h3>Acesso pela Rede Local</h3>
+                <p>Use o endereço abaixo para acessar o PDV de outros dispositivos:</p>
+                <input type="text" id="local-url" readonly>
+            </div>
+            <button id="open-url-btn" class="btn-secondary">Abrir no Navegador</button>
+        </div>
+        
+        <br>
+
+        <h2>Ajuda e Orientações</h2>
+        <details>
+            <summary>▶ Primeiros Passos e Dicas de Uso</summary>
+            <div class="tutorial-content">
+                <p>Bem-vindo ao Painel de Controle do seu PDV!</p>
+                <ul>
+                    <li>Este programa atua como o <strong>servidor central</strong> do seu sistema. Ele precisa ficar aberto no computador principal para que o PDV funcione.</li>
+                    <li>O status do servidor deve estar sempre <strong>"Online"</strong>. Se estiver "Offline" ou "Erro", tente fechar e abrir este programa novamente.</li>
+                    <li>Para acessar o PDV em outros computadores, tablets ou celulares, certifique-se de que eles estão na <strong>mesma rede Wi-Fi</strong> do computador principal.</li>
+                    <li>Use o endereço IP exibido acima para acessar o sistema nesses outros dispositivos.</li>
+                </ul>
+            </div>
+        </details>
+        <details>
+            <summary>▶ Tutorial: Como liberar o acesso na rede (Configurar Firewall do Windows)</summary>
+            <div class="tutorial-content">
+                <p>Se outros dispositivos não conseguem acessar o sistema, pode ser necessário liberar a porta no Firewall do Windows. Siga os passos:</p>
+                <ol>
+                    <li>No menu Iniciar, pesquise por <strong>"Segurança do Windows"</strong> e abra.</li>
+                    <li>Clique em <strong>"Firewall e proteção de rede"</strong>.</li>
+                    <li>Clique na rede que está "ativa" (geralmente <strong>"Rede particular"</strong>). Certifique-se de que o perfil da sua rede está como "Particular" nas configurações de Wi-Fi.</li>
+                    <li>Clique em <strong>"Permitir um aplicativo pelo firewall"</strong>.</li>
+                    <li>Na nova janela, clique no botão <strong>"Alterar configurações"</strong> (pode pedir senha de administrador).</li>
+                    <li>Clique em <strong>"Permitir outro aplicativo..."</strong> na parte inferior.</li>
+                    <li>Na janelinha que abrir, clique em <strong>"Procurar..."</strong>.</li>
+                    <li>Navegue até a pasta de instalação do Node.js, que geralmente é <strong>C:\Program Files\nodejs\</strong>, selecione o arquivo <strong>node.exe</strong> e clique em "Abrir", depois em "Adicionar".</li>
+                    <li>Na lista de aplicativos, encontre o "Node.js: Server-side JavaScript" que você acabou de adicionar e marque as caixinhas nas colunas "Particular" e "Pública".</li>
+                    <li>Clique em OK para salvar. Talvez seja necessário reiniciar este Painel de Controle após a alteração.</li>
+                </ol>
+                <p><strong>Alternativa (por porta):</strong> Se preferir, em "Firewall e proteção de rede", vá em "Configurações avançadas" > "Regras de Entrada" > "Nova Regra...". Escolha "Porta", "TCP", e digite a porta <strong>3333</strong>. Permita a conexão para todos os perfis.</p>
+            </div>
+        </details>
+
+        <h2>Log de Atividades</h2>
+        <pre id="log-output">Aguardando inicialização...</pre>
+    </div>
+
+    <script src="./control-panel.js"></script>
+</body>
+</html>

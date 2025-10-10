@@ -1,13 +1,19 @@
-// pdv-web-techpriv\backend\src\config\database.js (VERSÃO ATUALIZADA)
-require('dotenv').config();
+// backend/src/config/database.js (VERSÃO FINAL E CORRIGIDA)
 const { Sequelize } = require('sequelize');
 const path = require('path');
 
-const sequelize = new Sequelize({
+// Lê o caminho do DB da variável de ambiente. Se não existir, usa um caminho local padrão.
+const storagePath = process.env.DB_STORAGE_PATH || path.resolve(__dirname, '..', '..', 'database.sqlite');
+
+// Cria o objeto de configuração
+const config = {
   dialect: 'sqlite',
-  // O banco de dados agora será um arquivo na pasta raiz do backend
-  storage: path.resolve(__dirname, '..', '..', 'database.sqlite'),
-  logging: false,
-});
+  storage: storagePath,
+  logging: false, 
+};
+
+// --- CORREÇÃO APLICADA AQUI ---
+// Cria a instância do Sequelize com a configuração e a exporta
+const sequelize = new Sequelize(config);
 
 module.exports = sequelize;

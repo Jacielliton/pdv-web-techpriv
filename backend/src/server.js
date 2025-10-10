@@ -1,51 +1,54 @@
-// backend/src/server.js (VERSÃO FINAL E ESTÁVEL)
+// backend/src/server.js (VERSÃO COM RETORNO DE ERRO)
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const morgan = require('morgan'); // Corrigido o import do morgan
-const sequelize = require('./config/database');
+const path = require('path');
+const sequelize = require('./config/database'); // Ele vai ler a variável de ambiente automaticamente
 const routes = require('./routes/index');
 const applyAssociations = require('./models/associations');
 const createAdminUser = require('./database/seeders/admin-user');
 
 const app = express();
-
-// Middlewares
-app.use(cors({
-  origin: '*' // Permite acesso de qualquer origem
-}));
-app.use(morgan('dev')); // Usando o morgan corretamente
+app.use(cors({ origin: '*' }));
 app.use(express.json());
-
-// Aplica as associações entre os models
 applyAssociations();
 
-// Define o prefixo /api para todas as rotas
 app.use('/api', routes);
+
+const frontendBuildPath = path.resolve(__dirname, '..', '..', 'frontend', 'cadastro-funcionarios', 'build');
+app.use(express.static(frontendBuildPath));
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(frontendBuildPath, 'index.html'));
+});
 
 const PORT = process.env.PORT || 3333;
 
-// Função principal para iniciar o servidor
-const startServer = async () => {
+// A função de início agora aceita variáveis de ambiente do processo pai
+const startServer = async (logCallback, statusCallback, env) => {
+  // Mescla as variáveis de ambiente recebidas com as existentes
+  process.env = { ...process.env, ...env };
+
+  const log = logCallback || console.log;
+  const status = statusCallback || console.log;
+
   try {
-    // 1. Tenta autenticar a conexão com o banco de dados
     await sequelize.authenticate();
-    console.log('✅ Conexão com o banco de dados estabelecida com sucesso.');
-
-    // 2. Garante que o usuário administrador exista (cria se não existir)
+    log('✅ Conexão com o banco de dados estabelecida com sucesso.');
     await createAdminUser();
-
-    // 3. Inicia o servidor, sem tentar alterar o banco de dados (sem sync)
+    
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Servidor rodando na porta ${PORT} e acessível na rede`);
+      log(`🚀 Servidor unificado rodando na porta ${PORT} e acessível na rede`);
+      status('Online');
     });
-
   } catch (error) {
-    console.error('❌ Não foi possível iniciar o servidor:', error);
+    log(`❌ Não foi possível iniciar o servidor: ${error.stack || error.toString()}`);
+    // ---> MUDANÇA AQUI: Passamos o objeto 'error' para o statusCallback <---
+    status('Erro', error);
   }
 };
 
-// Inicia a aplicação
-startServer();
+if (require.main === module) {
+  startServer();
+}
 
-module.exports = app;
+module.exports = startServer;
